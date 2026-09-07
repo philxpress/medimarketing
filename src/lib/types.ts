@@ -94,6 +94,15 @@ export type CampaignStatus =
   | "paused"
   | "failed";
 
+/** A file attached to a campaign (stored in Vercel Blob). */
+export interface Attachment {
+  filename: string;
+  contentType: string;
+  size: number;
+  /** Blob URL to fetch the bytes from at send time. */
+  url: string;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -102,6 +111,7 @@ export interface Campaign {
   fromProvider: IntegrationProvider;
   fromEmail: string;
   listId?: string;
+  attachments?: Attachment[];
   /** Denormalized counts for the dashboard. */
   stats: {
     total: number;

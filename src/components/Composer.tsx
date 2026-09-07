@@ -1,8 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Image as ImageIcon, Send, Save, Eye, Wand2 } from "lucide-react";
+import {
+  Sparkles,
+  Image as ImageIcon,
+  Send,
+  Save,
+  Eye,
+  Wand2,
+  Paperclip,
+  FileUp,
+  Clock,
+  X,
+  Mail,
+} from "lucide-react";
+import type { Attachment } from "@/lib/types";
 
 interface Mailbox {
   provider: "gmail" | "microsoft";
@@ -14,13 +27,7 @@ interface ListSummary {
   count: number;
 }
 
-const MERGE_FIELDS = [
-  "firstName",
-  "lastName",
-  "practiceName",
-  "specialty",
-  "city",
-];
+const MERGE_FIELDS = ["firstName", "lastName", "practiceName", "specialty", "city"];
 
 const SAMPLE = {
   firstName: "Aisha",
@@ -48,13 +55,19 @@ export function Composer({
   const [body, setBody] = useState(
     "<p>Hi {{firstName}},</p>\n<p>Write your message to {{practiceName}} here…</p>"
   );
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [scheduleMode, setScheduleMode] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState("");
 
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [imgBusy, setImgBusy] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const attachRef = useRef<HTMLInputElement>(null);
+  const htmlRef = useRef<HTMLInputElement>(null);
 
   const canSend =
     mailboxes.length > 0 && subject.trim() && body.trim() && listId && name.trim();
@@ -109,11 +122,75 @@ export function Composer({
     }
   }
 
-  async function save(send: boolean) {
-    setSending(true);
+  async function uploadAttachment(file: File) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/attachments/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAttachments((a) => [...a, data as Attachment]);
+      setMsg(`Attached ${data.filename}.`);
+    } catch (err) {
+      setMsg(`Attachment failed: ${err}`);
+    } finally {
+      setBusy(false);
+      if (attachRef.current) attachRef.current.value = "";
+    }
+  }
+
+  async function importHtml(file: File) {
+    const text = await file.text();
+    setBody(text);
+    setMsg(`Imported ${file.name} as the email body.`);
+    if (htmlRef.current) htmlRef.current.value = "";
+  }
+
+  async function sendTest() {
+    if (!subject.trim() || !body.trim() || mailboxes.length === 0) {
+      setMsg("Add a subject, body, and a connected mailbox first.");
+      return;
+    }
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/campaigns/test-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject,
+          body,
+          fromProvider: mailboxes[fromIdx].provider,
+          attachments,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMsg(`Test sent to ${data.sentTo}. Check your inbox.`);
+    } catch (err) {
+      setMsg(`Test failed: ${err}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function save(mode: "draft" | "send" | "schedule") {
+    if (mode === "schedule" && !scheduleAt) {
+      setMsg("Pick a date and time to schedule.");
+      return;
+    }
+    setBusy(true);
     setMsg(null);
     try {
       const mb = mailboxes[fromIdx];
+      const scheduledAt =
+        mode === "schedule" ? new Date(scheduleAt).getTime() : undefined;
+      if (mode === "schedule" && scheduledAt && scheduledAt <= Date.now()) {
+        throw new Error("Scheduled time must be in the future.");
+      }
+
       const createRes = await fetch("/api/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,24 +201,22 @@ export function Composer({
           fromProvider: mb?.provider,
           fromEmail: mb?.email,
           listId,
+          attachments,
+          scheduledAt,
         }),
       });
       const created = await createRes.json();
       if (!createRes.ok) throw new Error(created.error);
 
-      if (!send) {
-        router.push(`/campaigns/${created.id}`);
-        return;
+      if (mode === "send") {
+        const sendRes = await fetch(`/api/campaigns/${created.id}/send`, { method: "POST" });
+        const sent = await sendRes.json();
+        if (!sendRes.ok) throw new Error(sent.error);
       }
-      const sendRes = await fetch(`/api/campaigns/${created.id}/send`, {
-        method: "POST",
-      });
-      const sent = await sendRes.json();
-      if (!sendRes.ok) throw new Error(sent.error);
       router.push(`/campaigns/${created.id}`);
     } catch (err) {
       setMsg(`Failed: ${err}`);
-      setSending(false);
+      setBusy(false);
     }
   }
 
@@ -217,15 +292,32 @@ export function Composer({
           <div>
             <div className="mb-1 flex items-center justify-between">
               <label className="label mb-0">Body (HTML + merge tokens)</label>
-              <button
-                type="button"
-                className="text-xs text-brand-600 hover:underline"
-                onClick={() => setShowPreview((s) => !s)}
-              >
-                <Eye size={12} className="mr-1 inline" />
-                {showPreview ? "Hide" : "Show"} preview
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="text-xs text-brand-600 hover:underline"
+                  onClick={() => htmlRef.current?.click()}
+                >
+                  <FileUp size={12} className="mr-1 inline" />
+                  Import HTML
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-brand-600 hover:underline"
+                  onClick={() => setShowPreview((s) => !s)}
+                >
+                  <Eye size={12} className="mr-1 inline" />
+                  {showPreview ? "Hide" : "Show"} preview
+                </button>
+              </div>
             </div>
+            <input
+              ref={htmlRef}
+              type="file"
+              accept=".html,.htm,text/html"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && importHtml(e.target.files[0])}
+            />
             <div className="mb-2 flex flex-wrap gap-1">
               {MERGE_FIELDS.map((f) => (
                 <button
@@ -245,21 +337,82 @@ export function Composer({
               onChange={(e) => setBody(e.target.value)}
             />
           </div>
+
+          {/* Attachments */}
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="label mb-0">
+                <Paperclip size={14} className="mr-1 inline" />
+                Attachments
+              </label>
+              <button
+                type="button"
+                className="text-xs text-brand-600 hover:underline"
+                onClick={() => attachRef.current?.click()}
+                disabled={busy}
+              >
+                + Add file
+              </button>
+            </div>
+            <input
+              ref={attachRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && uploadAttachment(e.target.files[0])}
+            />
+            {attachments.length === 0 ? (
+              <p className="text-xs text-neutral-500">
+                PDF, images, documents — attached to every email in this campaign.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {attachments.map((a, i) => (
+                  <li
+                    key={a.url}
+                    className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-1.5 text-sm"
+                  >
+                    <span className="truncate text-neutral-900">
+                      {a.filename}{" "}
+                      <span className="text-neutral-500">
+                        ({Math.max(1, Math.round(a.size / 1024))} KB)
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachments((arr) => arr.filter((_, j) => j !== i))}
+                      className="text-neutral-500 hover:text-neutral-900"
+                    >
+                      <X size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         {showPreview && (
           <div className="card">
-            <div className="mb-2 text-xs uppercase text-neutral-900">
+            <div className="mb-2 text-xs uppercase text-neutral-500">
               Preview (sample: {SAMPLE.firstName} @ {SAMPLE.practiceName})
             </div>
             <div className="mb-3 border-b border-slate-100 pb-2 text-sm font-semibold text-neutral-900">
-              {previewSubject || <span className="text-neutral-900">No subject</span>}
+              {previewSubject || <span className="text-neutral-400">No subject</span>}
             </div>
             <div
               className="prose prose-sm max-w-none text-neutral-900"
               dangerouslySetInnerHTML={{ __html: preview }}
             />
-            <div className="mt-4 border-t border-slate-100 pt-2 text-xs text-neutral-900">
+            {attachments.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
+                {attachments.map((a) => (
+                  <span key={a.url} className="badge bg-slate-100 text-neutral-900">
+                    <Paperclip size={11} className="mr-1" /> {a.filename}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-4 border-t border-slate-100 pt-2 text-xs text-neutral-500">
               A compliant footer (your address + unsubscribe link) is added automatically on send.
             </div>
           </div>
@@ -271,13 +424,59 @@ export function Composer({
           </div>
         )}
 
+        {/* Schedule toggle */}
+        <div className="card">
+          <label className="flex items-center gap-2 text-sm font-medium text-neutral-900">
+            <input
+              type="checkbox"
+              checked={scheduleMode}
+              onChange={(e) => setScheduleMode(e.target.checked)}
+            />
+            <Clock size={15} /> Schedule for later
+          </label>
+          {scheduleMode && (
+            <div className="mt-3">
+              <input
+                type="datetime-local"
+                className="input max-w-xs"
+                value={scheduleAt}
+                onChange={(e) => setScheduleAt(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-neutral-500">
+                Processed every ~15 min by a scheduled job. Uses your browser&apos;s timezone.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-3">
-          <button className="btn-secondary" onClick={() => save(false)} disabled={sending || !name.trim()}>
+          <button
+            className="btn-secondary"
+            onClick={() => save("draft")}
+            disabled={busy || !name.trim()}
+          >
             <Save size={16} /> Save draft
           </button>
-          <button className="btn-primary" onClick={() => save(true)} disabled={sending || !canSend}>
-            <Send size={16} /> {sending ? "Sending…" : "Send campaign"}
+          <button className="btn-secondary" onClick={sendTest} disabled={busy}>
+            <Mail size={16} /> Send test to me
           </button>
+          {scheduleMode ? (
+            <button
+              className="btn-primary"
+              onClick={() => save("schedule")}
+              disabled={busy || !canSend || !scheduleAt}
+            >
+              <Clock size={16} /> {busy ? "Scheduling…" : "Schedule send"}
+            </button>
+          ) : (
+            <button
+              className="btn-primary"
+              onClick={() => save("send")}
+              disabled={busy || !canSend}
+            >
+              <Send size={16} /> {busy ? "Sending…" : "Send now"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -288,7 +487,7 @@ export function Composer({
             <Wand2 size={18} className="text-brand-600" />
             <h2 className="font-semibold text-neutral-900">AI assistant</h2>
           </div>
-          <p className="mb-3 text-sm text-neutral-900">
+          <p className="mb-3 text-sm text-neutral-500">
             Describe what you want to say. Copy is tuned for a professional medical B2B audience.
           </p>
           <textarea
@@ -306,7 +505,7 @@ export function Composer({
               <ImageIcon size={16} /> {imgBusy ? "Creating…" : "Generate an image"}
             </button>
           )}
-          <p className="mt-3 text-xs text-neutral-900">
+          <p className="mt-3 text-xs text-neutral-500">
             Always review AI output. Never include patient data or unverified clinical claims.
           </p>
         </div>

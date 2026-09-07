@@ -7,6 +7,13 @@ import type { Campaign } from "@/lib/types";
 // Dynamic: reads cookies/session and does per-request IO — never prerender.
 export const dynamic = "force-dynamic";
 
+const attachmentSchema = z.object({
+  filename: z.string().min(1),
+  contentType: z.string().min(1),
+  size: z.number().int().nonnegative(),
+  url: z.string().url(),
+});
+
 const schema = z.object({
   name: z.string().min(1).max(140),
   subject: z.string().min(1).max(300),
@@ -14,9 +21,12 @@ const schema = z.object({
   fromProvider: z.enum(["gmail", "microsoft"]).optional(),
   fromEmail: z.string().email().optional(),
   listId: z.string().optional(),
+  attachments: z.array(attachmentSchema).max(10).optional(),
+  /** Epoch ms; when set (and in the future), the campaign is scheduled. */
+  scheduledAt: z.number().int().positive().optional(),
 });
 
-/** Create a draft campaign. Sending is a separate, explicit step. */
+/** Create a draft or scheduled campaign. Immediate sending is a separate step. */
 export async function POST(req: NextRequest) {
   try {
     const { orgId, user } = await requireOrg();
@@ -28,6 +38,8 @@ export async function POST(req: NextRequest) {
       total = list?.contactIds.length ?? 0;
     }
 
+    const isScheduled = Boolean(body.scheduledAt && body.scheduledAt > Date.now());
+
     const ref = adminDb.collection("orgs").doc(orgId).collection("campaigns").doc();
     const now = Date.now();
     const campaign: Campaign = {
@@ -38,14 +50,16 @@ export async function POST(req: NextRequest) {
       fromProvider: body.fromProvider ?? "gmail",
       fromEmail: body.fromEmail ?? "",
       listId: body.listId,
+      attachments: body.attachments ?? [],
       stats: { total, sent: 0, failed: 0, skipped: 0 },
-      status: "draft",
+      status: isScheduled ? "scheduled" : "draft",
+      ...(isScheduled ? { scheduledAt: body.scheduledAt } : {}),
       createdBy: user.uid,
       createdAt: now,
       updatedAt: now,
     };
     await ref.set(campaign);
-    return NextResponse.json({ id: ref.id });
+    return NextResponse.json({ id: ref.id, status: campaign.status });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 400 });
   }

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@vercel/blob": "^0.27.0",
     "firebase": "^10.14.1",
     "firebase-admin": "^12.7.0",
     "googleapis": "^144.0.0",

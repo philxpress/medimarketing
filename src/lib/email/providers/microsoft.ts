@@ -107,6 +107,16 @@ export async function sendViaGraph(
             ],
           }
         : {}),
+      ...(email.attachments?.length
+        ? {
+            attachments: email.attachments.map((att) => ({
+              "@odata.type": "#microsoft.graph.fileAttachment",
+              name: att.filename,
+              contentType: att.contentType,
+              contentBytes: att.contentBase64,
+            })),
+          }
+        : {}),
     },
     saveToSentItems: true,
   };
