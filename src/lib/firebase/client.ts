@@ -1,7 +1,13 @@
 /**
- * Firebase client SDK — runs in the browser.
+ * Firebase client SDK — browser only.
  * Used for authentication (email/password, Google, Microsoft, MFA) and
  * direct Firestore reads guarded by security rules.
+ *
+ * IMPORTANT: the SDK is initialized only in the browser. During SSR / static
+ * prerender (e.g. Vercel's build step) `getAuth()` would throw
+ * `auth/invalid-api-key`, and these pages don't need Firebase on the server
+ * anyway — the auth flows all run inside browser event handlers. So on the
+ * server these exports are intentionally left uninitialized.
  */
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
@@ -16,9 +22,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-export const firebaseApp: FirebaseApp = getApps().length
-  ? getApp()
-  : initializeApp(firebaseConfig);
+const isBrowser = typeof window !== "undefined";
 
-export const auth: Auth = getAuth(firebaseApp);
-export const db: Firestore = getFirestore(firebaseApp);
+export const firebaseApp: FirebaseApp = isBrowser
+  ? getApps().length
+    ? getApp()
+    : initializeApp(firebaseConfig)
+  : (undefined as unknown as FirebaseApp);
+
+export const auth: Auth = isBrowser
+  ? getAuth(firebaseApp)
+  : (undefined as unknown as Auth);
+
+export const db: Firestore = isBrowser
+  ? getFirestore(firebaseApp)
+  : (undefined as unknown as Firestore);

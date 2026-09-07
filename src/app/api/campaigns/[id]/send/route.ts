@@ -11,8 +11,10 @@ import {
 import { sendEmail } from "@/lib/email/providers";
 import type { Campaign, Recipient } from "@/lib/types";
 
-// Allow longer execution for modest batches (configure on Vercel Pro/Enterprise).
-export const maxDuration = 300;
+// Max serverless execution time. 60s is the ceiling on Vercel's Hobby plan;
+// Pro/Enterprise allow up to 300 (raise this if you upgrade). For large lists,
+// move sending to a background queue (see README roadmap) rather than raising this.
+export const maxDuration = 60;
 
 /**
  * Send a campaign to its list. Renders merge fields per recipient, appends the
