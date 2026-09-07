@@ -156,6 +156,43 @@ export interface CampaignSegment {
   tag?: string;
 }
 
+// ── Automations / journeys ────────────────────────────────────────────
+
+/** One email in a drip sequence, sent after `delayHours` from the prior step. */
+export interface JourneyStep {
+  delayHours: number;
+  subject: string;
+  body: string;
+}
+
+export interface Journey {
+  id: string;
+  name: string;
+  description?: string;
+  fromProvider: IntegrationProvider;
+  fromEmail: string;
+  steps: JourneyStep[];
+  active: boolean;
+  enrolledCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type EnrollmentStatus = "active" | "completed" | "failed" | "cancelled";
+
+/** A contact progressing through a journey. */
+export interface Enrollment {
+  id: string; // contactId
+  contactId: string;
+  email: string;
+  currentStep: number; // index of the next step to send
+  nextRunAt: number;
+  status: EnrollmentStatus;
+  startedAt: number;
+  updatedAt: number;
+  lastError?: string;
+}
+
 /** Immutable audit trail — every send and every consent change. */
 export interface AuditEvent {
   id: string;

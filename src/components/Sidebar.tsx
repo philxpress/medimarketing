@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  GitBranch,
 } from "lucide-react";
 import { logout } from "@/lib/auth/client";
 
@@ -19,6 +20,7 @@ const NAV = [
   { href: "/contacts", label: "Contacts & Lists", icon: Users },
   { href: "/campaigns", label: "Campaigns", icon: Mail },
   { href: "/campaigns/new", label: "New campaign", icon: Sparkles },
+  { href: "/journeys", label: "Automations", icon: GitBranch },
   { href: "/history", label: "Email history", icon: History },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

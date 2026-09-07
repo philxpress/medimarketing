@@ -85,6 +85,24 @@ export async function getTemplates(orgId: string): Promise<Template[]> {
   return snap.docs.map((d) => d.data() as Template);
 }
 
+export async function getJourneys(
+  orgId: string
+): Promise<import("@/lib/types").Journey[]> {
+  const snap = await org(orgId)
+    .collection("journeys")
+    .orderBy("createdAt", "desc")
+    .get();
+  return snap.docs.map((d) => d.data() as import("@/lib/types").Journey);
+}
+
+export async function getJourney(
+  orgId: string,
+  id: string
+): Promise<import("@/lib/types").Journey | null> {
+  const snap = await org(orgId).collection("journeys").doc(id).get();
+  return snap.exists ? (snap.data() as import("@/lib/types").Journey) : null;
+}
+
 export async function getIntegrations(orgId: string): Promise<Integration[]> {
   const snap = await org(orgId).collection("integrations").get();
   return snap.docs.map((d) => {
