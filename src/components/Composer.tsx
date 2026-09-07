@@ -232,7 +232,7 @@ export function Composer({
                   key={f}
                   type="button"
                   onClick={() => insertToken(f)}
-                  className="badge bg-slate-100 text-slate-600 hover:bg-brand-100 hover:text-brand-700"
+                  className="badge bg-slate-100 text-neutral-900 hover:bg-brand-100 hover:text-brand-700"
                 >
                   + {f}
                 </button>
@@ -249,24 +249,24 @@ export function Composer({
 
         {showPreview && (
           <div className="card">
-            <div className="mb-2 text-xs uppercase text-slate-400">
+            <div className="mb-2 text-xs uppercase text-neutral-900">
               Preview (sample: {SAMPLE.firstName} @ {SAMPLE.practiceName})
             </div>
-            <div className="mb-3 border-b border-slate-100 pb-2 text-sm font-semibold text-slate-800">
-              {previewSubject || <span className="text-slate-400">No subject</span>}
+            <div className="mb-3 border-b border-slate-100 pb-2 text-sm font-semibold text-neutral-900">
+              {previewSubject || <span className="text-neutral-900">No subject</span>}
             </div>
             <div
-              className="prose prose-sm max-w-none text-slate-700"
+              className="prose prose-sm max-w-none text-neutral-900"
               dangerouslySetInnerHTML={{ __html: preview }}
             />
-            <div className="mt-4 border-t border-slate-100 pt-2 text-xs text-slate-400">
+            <div className="mt-4 border-t border-slate-100 pt-2 text-xs text-neutral-900">
               A compliant footer (your address + unsubscribe link) is added automatically on send.
             </div>
           </div>
         )}
 
         {msg && (
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700">
+          <div className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-neutral-900">
             {msg}
           </div>
         )}
@@ -286,9 +286,9 @@ export function Composer({
         <div className="card border-brand-100 bg-gradient-to-b from-brand-50/60 to-white">
           <div className="mb-2 flex items-center gap-2">
             <Wand2 size={18} className="text-brand-600" />
-            <h2 className="font-semibold text-slate-900">AI assistant</h2>
+            <h2 className="font-semibold text-neutral-900">AI assistant</h2>
           </div>
-          <p className="mb-3 text-sm text-slate-500">
+          <p className="mb-3 text-sm text-neutral-900">
             Describe what you want to say. Copy is tuned for a professional medical B2B audience.
           </p>
           <textarea
@@ -306,7 +306,7 @@ export function Composer({
               <ImageIcon size={16} /> {imgBusy ? "Creating…" : "Generate an image"}
             </button>
           )}
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-neutral-900">
             Always review AI output. Never include patient data or unverified clinical claims.
           </p>
         </div>

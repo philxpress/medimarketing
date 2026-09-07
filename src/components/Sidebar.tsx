@@ -42,8 +42,8 @@ export function Sidebar({
           <Activity size={20} />
         </span>
         <div>
-          <div className="font-bold leading-tight text-slate-900">MediReach</div>
-          <div className="max-w-[9rem] truncate text-xs text-slate-400">{orgName}</div>
+          <div className="font-bold leading-tight text-neutral-900">MediReach</div>
+          <div className="max-w-[9rem] truncate text-xs text-neutral-900">{orgName}</div>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export function Sidebar({
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
                 active
                   ? "bg-brand-50 text-brand-700"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  : "text-neutral-900 hover:bg-slate-50 hover:text-neutral-900"
               }`}
             >
               <Icon size={18} />
@@ -72,11 +72,11 @@ export function Sidebar({
 
       <div className="border-t border-slate-200 p-3">
         <div className="mb-2 px-2">
-          <div className="truncate text-sm font-medium text-slate-700">{userName}</div>
-          <div className="text-xs capitalize text-slate-400">{role}</div>
+          <div className="truncate text-sm font-medium text-neutral-900">{userName}</div>
+          <div className="text-xs capitalize text-neutral-900">{role}</div>
         </div>
         <button
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-slate-50"
           onClick={async () => {
             await logout();
             router.push("/login");

@@ -56,7 +56,7 @@ export function OrgProfileForm({
           onChange={(e) => setAddr(e.target.value)}
           disabled={!canEdit}
         />
-        <p className="mt-1 text-xs text-slate-400">Required by CAN-SPAM in every marketing email.</p>
+        <p className="mt-1 text-xs text-neutral-900">Required by CAN-SPAM in every marketing email.</p>
       </div>
       <div>
         <label className="label">Reply-to email (optional)</label>
@@ -68,13 +68,13 @@ export function OrgProfileForm({
           disabled={!canEdit}
         />
       </div>
-      {msg && <p className="text-sm text-slate-600">{msg}</p>}
+      {msg && <p className="text-sm text-neutral-900">{msg}</p>}
       {canEdit ? (
         <button className="btn-primary" disabled={busy}>
           {busy ? "Saving…" : "Save changes"}
         </button>
       ) : (
-        <p className="text-sm text-slate-400">Only owners and admins can edit workspace settings.</p>
+        <p className="text-sm text-neutral-900">Only owners and admins can edit workspace settings.</p>
       )}
     </form>
   );

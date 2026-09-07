@@ -16,14 +16,14 @@ export function AuthShell({
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white">
             <Activity size={22} />
           </span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900">MediReach</span>
+          <span className="text-2xl font-bold tracking-tight text-neutral-900">MediReach</span>
         </div>
         <div className="card">
-          <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-          {subtitle && <p className="mt-1 mb-6 text-sm text-slate-500">{subtitle}</p>}
+          <h1 className="text-xl font-semibold text-neutral-900">{title}</h1>
+          {subtitle && <p className="mt-1 mb-6 text-sm text-neutral-900">{subtitle}</p>}
           {children}
         </div>
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-neutral-900">
           For authorized marketing use. Follow CAN-SPAM and applicable healthcare rules.
         </p>
       </div>

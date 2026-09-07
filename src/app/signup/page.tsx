@@ -39,7 +39,7 @@ export default function SignupPage() {
         onMicrosoft={() => run(loginWithMicrosoft)}
         disabled={busy}
       />
-      <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
+      <div className="my-5 flex items-center gap-3 text-xs text-neutral-900">
         <span className="h-px flex-1 bg-slate-200" /> OR <span className="h-px flex-1 bg-slate-200" />
       </div>
       <form
@@ -67,14 +67,14 @@ export default function SignupPage() {
             minLength={8}
             required
           />
-          <p className="mt-1 text-xs text-slate-400">At least 8 characters. You can enable 2FA after signing in.</p>
+          <p className="mt-1 text-xs text-neutral-900">At least 8 characters. You can enable 2FA after signing in.</p>
         </div>
         {error && <p className="text-sm text-neutral-900">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Creating…" : "Create account"}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-neutral-900">
         Already have an account?{" "}
         <Link href="/login" className="font-medium text-brand-600 hover:underline">
           Sign in

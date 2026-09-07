@@ -58,7 +58,7 @@ export function IntegrationsPanel({
         connectHref="/api/integrations/microsoft/connect"
         onDisconnect={() => disconnect("microsoft")}
       />
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-neutral-900">
         Sending happens through your own mailbox, so it inherits your provider&apos;s daily sending
         limits. For high-volume sending, connect a dedicated marketing mailbox.
       </p>
@@ -83,19 +83,19 @@ function Card({
   return (
     <div className="card flex items-center justify-between gap-4">
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+        <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-neutral-900">
           <Mail size={18} />
         </span>
         <div>
-          <div className="font-medium text-slate-900">{name}</div>
-          <div className="text-sm text-slate-500">{desc}</div>
+          <div className="font-medium text-neutral-900">{name}</div>
+          <div className="text-sm text-neutral-900">{desc}</div>
           {connected && (
             <div className="mt-1 flex items-center gap-1 text-sm text-neutral-900">
               <CheckCircle2 size={14} /> {conn!.email}
             </div>
           )}
           {conn && conn.status !== "connected" && (
-            <div className="mt-1 flex items-center gap-1 text-sm text-neutral-500">
+            <div className="mt-1 flex items-center gap-1 text-sm text-neutral-900">
               <XCircle size={14} /> {conn.status}
             </div>
           )}

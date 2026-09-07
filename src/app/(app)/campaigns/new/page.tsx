@@ -23,7 +23,7 @@ export default async function NewCampaignPage() {
       <PageHeader title="New campaign" description="Compose, personalize, and send." />
 
       {!ready && (
-        <div className="mb-6 rounded-xl border border-neutral-300 bg-neutral-100 p-4 text-sm text-neutral-700">
+        <div className="mb-6 rounded-xl border border-neutral-300 bg-neutral-100 p-4 text-sm text-neutral-900">
           Before sending you need{" "}
           {!org.postalAddress && <span>a postal address</span>}
           {!org.postalAddress && connected.length === 0 && " and "}

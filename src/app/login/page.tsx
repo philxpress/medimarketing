@@ -77,7 +77,7 @@ export default function LoginPage() {
         onMicrosoft={() => run(loginWithMicrosoft)}
         disabled={busy}
       />
-      <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
+      <div className="my-5 flex items-center gap-3 text-xs text-neutral-900">
         <span className="h-px flex-1 bg-slate-200" /> OR <span className="h-px flex-1 bg-slate-200" />
       </div>
       <form
@@ -112,7 +112,7 @@ export default function LoginPage() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-neutral-900">
         No account?{" "}
         <Link href="/signup" className="font-medium text-brand-600 hover:underline">
           Create one

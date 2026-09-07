@@ -80,9 +80,9 @@ export function ContactsClient({
         <div className="card">
           <div className="mb-3 flex items-center gap-2">
             <Upload size={18} className="text-brand-500" />
-            <h2 className="font-semibold text-slate-900">Upload a CSV</h2>
+            <h2 className="font-semibold text-neutral-900">Upload a CSV</h2>
           </div>
-          <p className="mb-3 text-sm text-slate-500">
+          <p className="mb-3 text-sm text-neutral-900">
             Columns recognised: <code className="text-xs">email, firstName, lastName, practiceName,
             specialty, city</code>. Any extra columns become custom merge fields. Email is required.
           </p>
@@ -111,9 +111,9 @@ export function ContactsClient({
         <div className="card">
           <div className="mb-3 flex items-center gap-2">
             <Database size={18} className="text-teal-600" />
-            <h2 className="font-semibold text-slate-900">Use the provided list</h2>
+            <h2 className="font-semibold text-neutral-900">Use the provided list</h2>
           </div>
-          <p className="mb-3 text-sm text-slate-500">
+          <p className="mb-3 text-sm text-neutral-900">
             Load a demo list of {12} fictional medical practices so you can try mail merge and
             campaigns right away.
           </p>
@@ -132,12 +132,12 @@ export function ContactsClient({
       {lists.length > 0 && (
         <div className="card">
           <div className="mb-3 flex items-center gap-2">
-            <ListChecks size={18} className="text-slate-500" />
-            <h2 className="font-semibold text-slate-900">Lists</h2>
+            <ListChecks size={18} className="text-neutral-900" />
+            <h2 className="font-semibold text-neutral-900">Lists</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             {lists.map((l) => (
-              <span key={l.id} className="badge bg-slate-100 text-slate-700">
+              <span key={l.id} className="badge bg-slate-100 text-neutral-900">
                 {l.name} · {l.count}
               </span>
             ))}
@@ -147,11 +147,11 @@ export function ContactsClient({
 
       <div className="card">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 className="font-semibold text-slate-900">
-            All contacts <span className="text-slate-400">({contacts.length})</span>
+          <h2 className="font-semibold text-neutral-900">
+            All contacts <span className="text-neutral-900">({contacts.length})</span>
           </h2>
           <div className="relative w-64">
-            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+            <Search size={16} className="absolute left-3 top-2.5 text-neutral-900" />
             <input
               className="input pl-9"
               placeholder="Search…"
@@ -161,11 +161,11 @@ export function ContactsClient({
           </div>
         </div>
         {filtered.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">No contacts yet.</p>
+          <p className="py-8 text-center text-sm text-neutral-900">No contacts yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase text-slate-400">
+              <thead className="text-xs uppercase text-neutral-900">
                 <tr className="border-b border-slate-100">
                   <th className="py-2 pr-4 font-medium">Name</th>
                   <th className="py-2 pr-4 font-medium">Email</th>
@@ -177,17 +177,17 @@ export function ContactsClient({
               <tbody className="divide-y divide-slate-50">
                 {filtered.slice(0, 200).map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50">
-                    <td className="py-2 pr-4 text-slate-700">
+                    <td className="py-2 pr-4 text-neutral-900">
                       {[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}
                     </td>
-                    <td className="py-2 pr-4 text-slate-600">{c.email}</td>
-                    <td className="py-2 pr-4 text-slate-600">{c.practiceName ?? "—"}</td>
-                    <td className="py-2 pr-4 text-slate-500">{c.specialty ?? "—"}</td>
+                    <td className="py-2 pr-4 text-neutral-900">{c.email}</td>
+                    <td className="py-2 pr-4 text-neutral-900">{c.practiceName ?? "—"}</td>
+                    <td className="py-2 pr-4 text-neutral-900">{c.specialty ?? "—"}</td>
                     <td className="py-2">
                       {c.subscribed ? (
                         <span className="badge bg-neutral-900 text-white">Subscribed</span>
                       ) : (
-                        <span className="badge bg-white text-neutral-500 ring-1 ring-inset ring-neutral-300">Unsubscribed</span>
+                        <span className="badge bg-white text-neutral-900 ring-1 ring-inset ring-neutral-300">Unsubscribed</span>
                       )}
                     </td>
                   </tr>
@@ -195,7 +195,7 @@ export function ContactsClient({
               </tbody>
             </table>
             {filtered.length > 200 && (
-              <p className="mt-3 text-center text-xs text-slate-400">
+              <p className="mt-3 text-center text-xs text-neutral-900">
                 Showing first 200 of {filtered.length}.
               </p>
             )}

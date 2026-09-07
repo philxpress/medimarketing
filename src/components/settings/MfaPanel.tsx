@@ -59,8 +59,8 @@ export function MfaPanel({
       <div className="card flex items-center gap-3">
         <ShieldCheck className="text-neutral-900" size={22} />
         <div>
-          <div className="font-medium text-slate-900">Two-factor authentication is on</div>
-          <div className="text-sm text-slate-500">
+          <div className="font-medium text-neutral-900">Two-factor authentication is on</div>
+          <div className="text-sm text-neutral-900">
             You&apos;ll be asked for a code from your authenticator app when you sign in.
           </div>
         </div>
@@ -71,10 +71,10 @@ export function MfaPanel({
   return (
     <div className="card">
       <div className="flex items-center gap-3">
-        <Shield className="text-slate-400" size={22} />
+        <Shield className="text-neutral-900" size={22} />
         <div className="flex-1">
-          <div className="font-medium text-slate-900">Two-factor authentication (TOTP)</div>
-          <div className="text-sm text-slate-500">
+          <div className="font-medium text-neutral-900">Two-factor authentication (TOTP)</div>
+          <div className="text-sm text-neutral-900">
             Add a second factor with an authenticator app (Google Authenticator, Authy, 1Password).
           </div>
         </div>
@@ -87,7 +87,7 @@ export function MfaPanel({
 
       {step === "setup" && (
         <div className="mt-4 border-t border-slate-100 pt-4">
-          <p className="mb-3 text-sm text-slate-600">
+          <p className="mb-3 text-sm text-neutral-900">
             Scan this QR code in your authenticator app, then enter the 6-digit code to confirm.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -101,8 +101,8 @@ export function MfaPanel({
             />
             <div className="flex-1 space-y-3">
               <div>
-                <div className="text-xs text-slate-400">Can&apos;t scan? Enter this key manually:</div>
-                <code className="break-all text-xs text-slate-600">{sharedKey}</code>
+                <div className="text-xs text-neutral-900">Can&apos;t scan? Enter this key manually:</div>
+                <code className="break-all text-xs text-neutral-900">{sharedKey}</code>
               </div>
               <input
                 className="input max-w-[12rem] text-center tracking-[0.3em]"

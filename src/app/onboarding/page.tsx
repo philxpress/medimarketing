@@ -57,7 +57,7 @@ export default function OnboardingPage() {
             onChange={(e) => setPostalAddress(e.target.value)}
             required
           />
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-neutral-900">
             Legally required in every marketing email (CAN-SPAM). Shown in the footer.
           </p>
         </div>

@@ -20,7 +20,7 @@ export default async function SettingsPage() {
       <PageHeader title="Settings" description="Workspace, mailboxes, and account security." />
       <div className="space-y-6">
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-900">
             Connected mailboxes
           </h2>
           <IntegrationsPanel
@@ -35,14 +35,14 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-900">
             Account security
           </h2>
           <MfaPanel initialEnrolled={member.mfaEnrolled} email={member.email} />
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-900">
             Workspace profile
           </h2>
           <OrgProfileForm

@@ -34,7 +34,7 @@ export function SendButton({ campaignId }: { campaignId: string }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-slate-700">Send this campaign now?</p>
+      <p className="text-sm font-medium text-neutral-900">Send this campaign now?</p>
       {error && <p className="text-sm text-neutral-900">{error}</p>}
       <div className="flex gap-2">
         <button className="btn-secondary flex-1" onClick={() => setConfirm(false)} disabled={busy}>

@@ -11,7 +11,7 @@ body {
   padding: 0;
   margin: 0;
   background: #f8fafc;
-  color: #0f172a;
+  color: #0a0a0a; /* near-black default text for maximum contrast */
 }
 
 @layer components {
@@ -22,7 +22,7 @@ body {
     @apply btn bg-brand-600 text-white hover:bg-brand-700;
   }
   .btn-secondary {
-    @apply btn bg-white text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50;
+    @apply btn bg-white text-neutral-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50;
   }
   .btn-danger {
     @apply btn bg-white text-neutral-900 ring-1 ring-inset ring-neutral-900 hover:bg-neutral-900 hover:text-white;
@@ -31,7 +31,7 @@ body {
     @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
   }
   .label {
-    @apply mb-1 block text-sm font-medium text-slate-700;
+    @apply mb-1 block text-sm font-medium text-neutral-900;
   }
   .card {
     @apply rounded-xl border border-slate-200 bg-white p-6 shadow-sm;

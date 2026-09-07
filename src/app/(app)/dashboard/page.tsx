@@ -50,8 +50,8 @@ export default async function DashboardPage() {
 
       {needsSetup && (
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-neutral-300 bg-neutral-100 p-4">
-          <AlertTriangle className="mt-0.5 shrink-0 text-neutral-700" size={20} />
-          <div className="text-sm text-neutral-700">
+          <AlertTriangle className="mt-0.5 shrink-0 text-neutral-900" size={20} />
+          <div className="text-sm text-neutral-900">
             <p className="font-medium">Finish setting up before you send</p>
             <ul className="mt-1 list-disc space-y-0.5 pl-5">
               {!org.postalAddress && (
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="card lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-900">Recent campaigns</h2>
+            <h2 className="font-semibold text-neutral-900">Recent campaigns</h2>
             <Link href="/campaigns" className="text-sm text-brand-600 hover:underline">
               View all
             </Link>
@@ -103,10 +103,10 @@ export default async function DashboardPage() {
               {campaigns.slice(0, 5).map((c) => (
                 <li key={c.id} className="flex items-center justify-between py-3">
                   <div>
-                    <Link href={`/campaigns/${c.id}`} className="font-medium text-slate-800 hover:text-brand-600">
+                    <Link href={`/campaigns/${c.id}`} className="font-medium text-neutral-900 hover:text-brand-600">
                       {c.name}
                     </Link>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-neutral-900">
                       {c.stats.sent}/{c.stats.total} sent
                     </div>
                   </div>
@@ -118,10 +118,10 @@ export default async function DashboardPage() {
         </div>
 
         <div className="card">
-          <h2 className="mb-4 font-semibold text-slate-900">Connected mailboxes</h2>
+          <h2 className="mb-4 font-semibold text-neutral-900">Connected mailboxes</h2>
           {connected.length === 0 ? (
-            <div className="text-sm text-slate-500">
-              <Plug className="mb-2 text-slate-300" size={28} />
+            <div className="text-sm text-neutral-900">
+              <Plug className="mb-2 text-neutral-400" size={28} />
               No mailbox connected.{" "}
               <Link href="/settings" className="text-brand-600 hover:underline">
                 Connect one
@@ -133,21 +133,21 @@ export default async function DashboardPage() {
               {connected.map((i) => (
                 <li key={i.provider} className="flex items-center gap-2 text-sm">
                   <span className="h-2 w-2 rounded-full bg-neutral-900" />
-                  <span className="capitalize text-slate-600">{i.provider}</span>
-                  <span className="truncate text-slate-400">· {i.connectedEmail}</span>
+                  <span className="capitalize text-neutral-900">{i.provider}</span>
+                  <span className="truncate text-neutral-900">· {i.connectedEmail}</span>
                 </li>
               ))}
             </ul>
           )}
 
-          <h2 className="mb-3 mt-6 font-semibold text-slate-900">Activity</h2>
+          <h2 className="mb-3 mt-6 font-semibold text-neutral-900">Activity</h2>
           {events.length === 0 ? (
-            <p className="text-sm text-slate-400">Nothing yet.</p>
+            <p className="text-sm text-neutral-900">Nothing yet.</p>
           ) : (
             <ul className="space-y-2 text-sm">
               {events.map((e) => (
-                <li key={e.id} className="text-slate-600">
-                  <span className="text-slate-400">
+                <li key={e.id} className="text-neutral-900">
+                  <span className="text-neutral-900">
                     {new Date(e.createdAt).toLocaleDateString()}
                   </span>{" "}
                   — {e.summary}
@@ -174,9 +174,9 @@ function Stat({
 }) {
   return (
     <div className="card p-4">
-      <Icon size={20} className={tone === "warn" ? "text-neutral-900" : "text-neutral-500"} />
-      <div className="mt-3 text-2xl font-bold text-slate-900">{value.toLocaleString()}</div>
-      <div className="text-xs text-slate-500">{label}</div>
+      <Icon size={20} className={tone === "warn" ? "text-neutral-900" : "text-neutral-900"} />
+      <div className="mt-3 text-2xl font-bold text-neutral-900">{value.toLocaleString()}</div>
+      <div className="text-xs text-neutral-900">{label}</div>
     </div>
   );
 }
@@ -192,8 +192,8 @@ function EmptyState({
 }) {
   return (
     <div className="py-8 text-center">
-      <p className="font-medium text-slate-700">{title}</p>
-      <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">{body}</p>
+      <p className="font-medium text-neutral-900">{title}</p>
+      <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-900">{body}</p>
       {cta && (
         <Link href={cta.href} className="btn-primary mt-4 inline-flex">
           {cta.label}

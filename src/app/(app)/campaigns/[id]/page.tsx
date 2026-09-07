@@ -24,7 +24,7 @@ export default async function CampaignDetailPage({
 
   return (
     <>
-      <Link href="/campaigns" className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800">
+      <Link href="/campaigns" className="mb-4 inline-flex items-center gap-1 text-sm text-neutral-900 hover:text-neutral-900">
         <ArrowLeft size={14} /> Back to campaigns
       </Link>
       <PageHeader
@@ -36,20 +36,20 @@ export default async function CampaignDetailPage({
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           <div className="card">
-            <h2 className="mb-3 font-semibold text-slate-900">Email preview</h2>
+            <h2 className="mb-3 font-semibold text-neutral-900">Email preview</h2>
             <div className="mb-2 text-sm">
-              <span className="text-slate-400">Subject: </span>
-              <span className="font-medium text-slate-800">{campaign.subject}</span>
+              <span className="text-neutral-900">Subject: </span>
+              <span className="font-medium text-neutral-900">{campaign.subject}</span>
             </div>
             <div
-              className="prose prose-sm max-w-none rounded-lg border border-slate-100 bg-slate-50 p-4 text-slate-700"
+              className="prose prose-sm max-w-none rounded-lg border border-slate-100 bg-slate-50 p-4 text-neutral-900"
               dangerouslySetInnerHTML={{ __html: campaign.body }}
             />
           </div>
 
           {recipients.length > 0 && (
             <div className="card p-0">
-              <h2 className="border-b border-slate-100 px-6 py-3 font-semibold text-slate-900">
+              <h2 className="border-b border-slate-100 px-6 py-3 font-semibold text-neutral-900">
                 Recipients
               </h2>
               <div className="max-h-96 overflow-y-auto">
@@ -57,7 +57,7 @@ export default async function CampaignDetailPage({
                   <tbody className="divide-y divide-slate-50">
                     {recipients.map((r) => (
                       <tr key={r.id}>
-                        <td className="px-6 py-2 text-slate-600">{r.email}</td>
+                        <td className="px-6 py-2 text-neutral-900">{r.email}</td>
                         <td className="px-6 py-2 text-right">
                           <RecipientBadge status={r.status} error={r.error} />
                         </td>
@@ -72,7 +72,7 @@ export default async function CampaignDetailPage({
 
         <div className="space-y-4">
           <div className="card">
-            <h2 className="mb-4 font-semibold text-slate-900">Details</h2>
+            <h2 className="mb-4 font-semibold text-neutral-900">Details</h2>
             <dl className="space-y-2 text-sm">
               <Row k="From" v={`${campaign.fromEmail || "—"} (${campaign.fromProvider})`} />
               <Row k="Recipients" v={String(campaign.stats.total)} />
@@ -88,7 +88,7 @@ export default async function CampaignDetailPage({
 
           {sendable && (
             <div className="card">
-              <p className="mb-3 text-sm text-slate-500">
+              <p className="mb-3 text-sm text-neutral-900">
                 Ready to send to {campaign.stats.total} recipient
                 {campaign.stats.total === 1 ? "" : "s"}? Unsubscribed contacts are skipped
                 automatically.
@@ -105,8 +105,8 @@ export default async function CampaignDetailPage({
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-slate-400">{k}</dt>
-      <dd className="text-right font-medium text-slate-700">{v}</dd>
+      <dt className="text-neutral-900">{k}</dt>
+      <dd className="text-right font-medium text-neutral-900">{v}</dd>
     </div>
   );
 }
@@ -115,8 +115,8 @@ function RecipientBadge({ status, error }: { status: string; error?: string }) {
   const map: Record<string, string> = {
     sent: "bg-neutral-900 text-white",
     failed: "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-900",
-    skipped: "bg-neutral-100 text-neutral-500",
-    pending: "bg-neutral-200 text-neutral-700",
+    skipped: "bg-neutral-100 text-neutral-900",
+    pending: "bg-neutral-200 text-neutral-900",
   };
   return (
     <span className={`badge ${map[status] ?? map.pending}`} title={error}>
