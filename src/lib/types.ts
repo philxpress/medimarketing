@@ -111,6 +111,8 @@ export interface Campaign {
   fromProvider: IntegrationProvider;
   fromEmail: string;
   listId?: string;
+  /** Optional filter applied to the list at send time (segmentation). */
+  segment?: CampaignSegment;
   attachments?: Attachment[];
   /** Denormalized counts for the dashboard. */
   stats: {
@@ -118,6 +120,8 @@ export interface Campaign {
     sent: number;
     failed: number;
     skipped: number; // unsubscribed / invalid
+    opened: number; // unique recipients who opened
+    clicked: number; // unique recipients who clicked a link
   };
   status: CampaignStatus;
   scheduledAt?: number;
@@ -137,6 +141,19 @@ export interface Recipient {
   error?: string;
   providerMessageId?: string;
   sentAt?: number;
+  // Engagement tracking
+  openedAt?: number;
+  opens?: number;
+  clickedAt?: number;
+  clicks?: number;
+  lastClickedUrl?: string;
+}
+
+/** A lightweight segment filter applied to a list at send time. */
+export interface CampaignSegment {
+  specialty?: string;
+  city?: string;
+  tag?: string;
 }
 
 /** Immutable audit trail — every send and every consent change. */

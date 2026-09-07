@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Plug,
   Sparkles,
+  MailOpen,
   type LucideIcon,
 } from "lucide-react";
 import { requireOrg } from "@/lib/auth/session";
@@ -31,7 +32,8 @@ export default async function DashboardPage() {
 
   const subscribed = contacts.filter((c) => c.subscribed).length;
   const totalSent = campaigns.reduce((n, c) => n + c.stats.sent, 0);
-  const totalFailed = campaigns.reduce((n, c) => n + c.stats.failed, 0);
+  const totalOpened = campaigns.reduce((n, c) => n + (c.stats.opened ?? 0), 0);
+  const openRate = totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0;
   const connected = integrations.filter((i) => i.status === "connected");
 
   const needsSetup = !org.postalAddress || connected.length === 0;
@@ -81,7 +83,7 @@ export default async function DashboardPage() {
         <Stat icon={Users} label="Subscribed contacts" value={subscribed} />
         <Stat icon={Mail} label="Campaigns" value={campaigns.length} />
         <Stat icon={Send} label="Emails sent" value={totalSent} />
-        <Stat icon={AlertTriangle} label="Failed" value={totalFailed} tone={totalFailed ? "warn" : "default"} />
+        <Stat icon={MailOpen} label="Avg open rate" value={openRate} suffix="%" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -165,18 +167,21 @@ function Stat({
   icon: Icon,
   label,
   value,
-  tone = "default",
+  suffix = "",
 }: {
   icon: LucideIcon;
   label: string;
   value: number;
-  tone?: "default" | "warn";
+  suffix?: string;
 }) {
   return (
     <div className="card p-4">
-      <Icon size={20} className={tone === "warn" ? "text-neutral-900" : "text-neutral-900"} />
-      <div className="mt-3 text-2xl font-bold text-neutral-900">{value.toLocaleString()}</div>
-      <div className="text-xs text-neutral-900">{label}</div>
+      <Icon size={20} className="text-neutral-900" />
+      <div className="mt-3 text-2xl font-bold text-neutral-900">
+        {value.toLocaleString()}
+        {suffix}
+      </div>
+      <div className="text-xs text-neutral-500">{label}</div>
     </div>
   );
 }

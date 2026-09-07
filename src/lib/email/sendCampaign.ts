@@ -20,9 +20,19 @@ import {
   oneClickUnsubscribeUrl,
 } from "@/lib/email/compliance";
 import { sendEmail } from "@/lib/email/providers";
+import { injectTracking } from "@/lib/email/tracking";
 import type { MimeAttachment } from "@/lib/email/mime";
 import { fetchAsBase64 } from "@/lib/storage";
-import type { Campaign, Recipient } from "@/lib/types";
+import type { Campaign, CampaignSegment, Contact, Recipient } from "@/lib/types";
+
+/** Apply a campaign's optional segment filter to a contact. */
+function matchesSegment(c: Contact, seg?: CampaignSegment): boolean {
+  if (!seg) return true;
+  if (seg.specialty && (c.specialty ?? "") !== seg.specialty) return false;
+  if (seg.city && (c.city ?? "") !== seg.city) return false;
+  if (seg.tag && !(c.tags ?? []).includes(seg.tag)) return false;
+  return true;
+}
 
 export interface SendOutcome {
   stats: Campaign["stats"];
@@ -60,7 +70,8 @@ export async function sendCampaign(
   if (!campaign.listId) throw new Error("Campaign has no recipient list.");
 
   const list = await getList(orgId, campaign.listId);
-  const contacts = await getContactsByIds(orgId, list?.contactIds ?? []);
+  const allContacts = await getContactsByIds(orgId, list?.contactIds ?? []);
+  const contacts = allContacts.filter((c) => matchesSegment(c, campaign.segment));
 
   const campaignRef = adminDb
     .collection("orgs")
@@ -99,8 +110,11 @@ export async function sendCampaign(
     try {
       const ctx = contactToMergeContext(contact);
       const subject = subjectTpl(ctx);
+      // Inject open/click tracking into the body, THEN add the compliance
+      // footer (so the unsubscribe link is never wrapped by the click tracker).
+      const tracked = injectTracking(bodyTpl(ctx), orgId, campaign.id, contact.id);
       const html = withComplianceFooter(
-        bodyTpl(ctx),
+        tracked,
         org,
         unsubscribeUrl(orgId, contact.id)
       );
@@ -137,19 +151,26 @@ export async function sendCampaign(
     await sleep(120); // gentle pacing for mailbox rate limits
   }
 
+  // Update only the send-time counters via dot-paths so engagement counters
+  // (stats.opened / stats.clicked), which accrue afterwards, are preserved.
+  await campaignRef.update({
+    status: failed > 0 && sent === 0 ? "failed" : "sent",
+    "stats.total": contacts.length,
+    "stats.sent": sent,
+    "stats.failed": failed,
+    "stats.skipped": skipped,
+    completedAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+
   const stats: Campaign["stats"] = {
     total: contacts.length,
     sent,
     failed,
     skipped,
+    opened: 0,
+    clicked: 0,
   };
-  await campaignRef.update({
-    status: failed > 0 && sent === 0 ? "failed" : "sent",
-    stats,
-    completedAt: Date.now(),
-    updatedAt: Date.now(),
-  });
-
   await logEvent(orgId, {
     type: "campaign.sent",
     actorUid,

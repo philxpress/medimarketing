@@ -22,6 +22,13 @@ const schema = z.object({
   fromEmail: z.string().email().optional(),
   listId: z.string().optional(),
   attachments: z.array(attachmentSchema).max(10).optional(),
+  segment: z
+    .object({
+      specialty: z.string().optional(),
+      city: z.string().optional(),
+      tag: z.string().optional(),
+    })
+    .optional(),
   /** Epoch ms; when set (and in the future), the campaign is scheduled. */
   scheduledAt: z.number().int().positive().optional(),
 });
@@ -51,7 +58,10 @@ export async function POST(req: NextRequest) {
       fromEmail: body.fromEmail ?? "",
       listId: body.listId,
       attachments: body.attachments ?? [],
-      stats: { total, sent: 0, failed: 0, skipped: 0 },
+      ...(body.segment && Object.values(body.segment).some(Boolean)
+        ? { segment: body.segment }
+        : {}),
+      stats: { total, sent: 0, failed: 0, skipped: 0, opened: 0, clicked: 0 },
       status: isScheduled ? "scheduled" : "draft",
       ...(isScheduled ? { scheduledAt: body.scheduledAt } : {}),
       createdBy: user.uid,

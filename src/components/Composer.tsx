@@ -14,6 +14,8 @@ import {
   Clock,
   X,
   Mail,
+  Filter,
+  LayoutTemplate,
 } from "lucide-react";
 import type { Attachment } from "@/lib/types";
 
@@ -25,6 +27,17 @@ interface ListSummary {
   id: string;
   name: string;
   count: number;
+}
+interface TemplateOption {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+}
+interface Facets {
+  specialties: string[];
+  cities: string[];
+  tags: string[];
 }
 
 const MERGE_FIELDS = ["firstName", "lastName", "practiceName", "specialty", "city"];
@@ -41,10 +54,14 @@ const SAMPLE = {
 export function Composer({
   mailboxes,
   lists,
+  templates = [],
+  facets = { specialties: [], cities: [], tags: [] },
   imageEnabled,
 }: {
   mailboxes: Mailbox[];
   lists: ListSummary[];
+  templates?: TemplateOption[];
+  facets?: Facets;
   imageEnabled: boolean;
 }) {
   const router = useRouter();
@@ -56,8 +73,50 @@ export function Composer({
     "<p>Hi {{firstName}},</p>\n<p>Write your message to {{practiceName}} here…</p>"
   );
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [segment, setSegment] = useState<{ specialty: string; city: string; tag: string }>({
+    specialty: "",
+    city: "",
+    tag: "",
+  });
   const [scheduleMode, setScheduleMode] = useState(false);
   const [scheduleAt, setScheduleAt] = useState("");
+
+  function applyTemplate(id: string) {
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    setSubject(t.subject);
+    setBody(t.body);
+    setMsg(`Loaded template "${t.name.replace(/^★ /, "")}".`);
+  }
+
+  async function saveAsTemplate() {
+    const tplName = window.prompt("Template name:", name || "My template");
+    if (!tplName) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: tplName, subject, body }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMsg(`Saved template "${tplName}".`);
+    } catch (err) {
+      setMsg(`Couldn't save template: ${err}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const cleanSegment = () => {
+    const s: { specialty?: string; city?: string; tag?: string } = {};
+    if (segment.specialty) s.specialty = segment.specialty;
+    if (segment.city) s.city = segment.city;
+    if (segment.tag) s.tag = segment.tag;
+    return Object.keys(s).length ? s : undefined;
+  };
 
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
@@ -202,6 +261,7 @@ export function Composer({
           fromEmail: mb?.email,
           listId,
           attachments,
+          segment: cleanSegment(),
           scheduledAt,
         }),
       });
@@ -277,9 +337,78 @@ export function Composer({
               </select>
             </div>
           </div>
+
+          {/* Segmentation: optionally narrow the list */}
+          <div>
+            <label className="label">
+              <Filter size={13} className="mr-1 inline" />
+              Segment (optional) — send only to contacts matching:
+            </label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <select
+                className="input"
+                value={segment.specialty}
+                onChange={(e) => setSegment((s) => ({ ...s, specialty: e.target.value }))}
+              >
+                <option value="">Any specialty</option>
+                {facets.specialties.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="input"
+                value={segment.city}
+                onChange={(e) => setSegment((s) => ({ ...s, city: e.target.value }))}
+              >
+                <option value="">Any city</option>
+                {facets.cities.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="input"
+                value={segment.tag}
+                onChange={(e) => setSegment((s) => ({ ...s, tag: e.target.value }))}
+              >
+                <option value="">Any tag</option>
+                {facets.tags.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         <div className="card space-y-4">
+          {templates.length > 0 && (
+            <div>
+              <label className="label">
+                <LayoutTemplate size={13} className="mr-1 inline" />
+                Start from a template
+              </label>
+              <select
+                className="input"
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) applyTemplate(e.target.value);
+                  e.target.value = "";
+                }}
+              >
+                <option value="">Choose a template…</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="label">Subject</label>
             <input
@@ -459,6 +588,13 @@ export function Composer({
           </button>
           <button className="btn-secondary" onClick={sendTest} disabled={busy}>
             <Mail size={16} /> Send test to me
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={saveAsTemplate}
+            disabled={busy || !subject.trim() || !body.trim()}
+          >
+            <LayoutTemplate size={16} /> Save as template
           </button>
           {scheduleMode ? (
             <button
