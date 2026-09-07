@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// MedReach Firestore rules.
+//
+// All privileged writes go through the Next.js server (Firebase Admin SDK),
+// which bypasses these rules. Client SDK access is therefore read-mostly and
+// tightly scoped: a signed-in user may read only their own org's data.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // uid -> orgId lookup. A user can read only their own index doc.
+    match /userIndex/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false; // server-only
+    }
+
+    // Is the caller a member of this org?
+    function isMember(orgId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid));
+    }
+
+    match /orgs/{orgId} {
+      allow read: if isMember(orgId);
+      allow write: if false; // server-only
+
+      match /{document=**} {
+        allow read: if isMember(orgId);
+        allow write: if false; // all writes via Admin SDK on the server
+      }
+    }
+  }
+}

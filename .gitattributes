@@ -1,0 +1,8 @@
+# Normalize line endings: store LF in the repo, avoid CRLF churn on Windows.
+* text=auto eol=lf
+
+# Binary/generated files git shouldn't try to diff or normalize
+*.png binary
+*.jpg binary
+*.ico binary
+package-lock.json -diff
