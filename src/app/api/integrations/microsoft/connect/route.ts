@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 import { requireOrg } from "@/lib/auth/session";
 import { microsoftAuthorizeUrl } from "@/lib/email/providers/microsoft";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 /** Start the Microsoft OAuth flow to connect an M365/Outlook send-mailbox. */
 export async function GET() {

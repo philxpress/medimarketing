@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { requireOrg } from "@/lib/auth/session";
 import { logEvent } from "@/lib/data";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 /** Disconnect (revoke) a connected mailbox. */
 export async function DELETE(

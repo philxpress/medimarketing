@@ -3,6 +3,8 @@ import { adminDb } from "@/lib/firebase/admin";
 import { requireOrg } from "@/lib/auth/session";
 import { SAMPLE_CONTACTS } from "@/lib/sampleData";
 import type { Contact } from "@/lib/types";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 /** Seeds the provided demo medical B2B list into the org. */
 export async function POST() {

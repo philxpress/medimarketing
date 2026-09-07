@@ -3,6 +3,8 @@ import Papa from "papaparse";
 import { adminDb } from "@/lib/firebase/admin";
 import { requireOrg } from "@/lib/auth/session";
 import type { Contact } from "@/lib/types";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 const KNOWN = new Set([
   "email",

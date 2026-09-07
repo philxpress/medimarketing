@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 import { requireOrg } from "@/lib/auth/session";
 import { googleOAuthClient, GMAIL_SCOPES } from "@/lib/email/providers/gmail";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 /** Kick off the Google OAuth consent flow to connect a Gmail send-mailbox. */
 export async function GET() {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/session";
 import { generateImage } from "@/lib/ai/generate";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 const schema = z.object({ prompt: z.string().min(3).max(1000) });
 

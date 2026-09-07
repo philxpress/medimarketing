@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { adminAuth } from "@/lib/firebase/admin";
 import { createSessionCookie, clearSessionCookie } from "@/lib/auth/session";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({ idToken: z.string().min(20) });
 

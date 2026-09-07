@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { verifyUnsubscribeToken } from "@/lib/email/compliance";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 /** Marks a contact as unsubscribed. Idempotent. */
 async function unsubscribe(token: string): Promise<boolean> {

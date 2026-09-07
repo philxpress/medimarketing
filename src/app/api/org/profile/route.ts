@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { adminDb } from "@/lib/firebase/admin";
 import { requireOrg } from "@/lib/auth/session";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 const schema = z.object({
   name: z.string().min(1).max(120),

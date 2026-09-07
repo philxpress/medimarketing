@@ -3,6 +3,8 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser, getOrgIdForUser } from "@/lib/auth/session";
 import type { Member, Org } from "@/lib/types";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 /**
  * Idempotently ensure the signed-in user belongs to an org.

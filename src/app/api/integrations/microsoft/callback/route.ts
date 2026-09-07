@@ -9,6 +9,8 @@ import {
 import { encrypt } from "@/lib/crypto";
 import { logEvent } from "@/lib/data";
 import type { Integration } from "@/lib/types";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

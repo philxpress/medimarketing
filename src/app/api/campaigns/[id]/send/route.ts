@@ -10,6 +10,8 @@ import {
 } from "@/lib/email/compliance";
 import { sendEmail } from "@/lib/email/providers";
 import type { Campaign, Recipient } from "@/lib/types";
+// Dynamic: reads cookies/session and does per-request IO — never prerender.
+export const dynamic = "force-dynamic";
 
 // Max serverless execution time. 60s is the ceiling on Vercel's Hobby plan;
 // Pro/Enterprise allow up to 300 (raise this if you upgrade). For large lists,
