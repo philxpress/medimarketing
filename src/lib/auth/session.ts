@@ -11,7 +11,7 @@ import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import type { Member, Org } from "@/lib/types";
 
-export const SESSION_COOKIE = "medreach_session";
+export const SESSION_COOKIE = "medireach_session";
 const FIVE_DAYS_MS = 60 * 60 * 24 * 5 * 1000;
 
 export async function createSessionCookie(idToken: string): Promise<void> {

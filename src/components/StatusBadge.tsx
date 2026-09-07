@@ -1,12 +1,12 @@
 import type { CampaignStatus } from "@/lib/types";
 
 const STYLES: Record<CampaignStatus, string> = {
-  draft: "bg-slate-100 text-slate-600",
-  scheduled: "bg-indigo-100 text-indigo-700",
-  sending: "bg-blue-100 text-blue-700",
-  sent: "bg-emerald-100 text-emerald-700",
-  paused: "bg-amber-100 text-amber-700",
-  failed: "bg-red-100 text-red-700",
+  draft: "bg-neutral-100 text-neutral-500",
+  scheduled: "bg-neutral-200 text-neutral-700",
+  sending: "bg-neutral-200 text-neutral-700",
+  sent: "bg-neutral-900 text-white",
+  paused: "bg-neutral-200 text-neutral-700",
+  failed: "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-900",
 };
 
 export function StatusBadge({ status }: { status: CampaignStatus }) {

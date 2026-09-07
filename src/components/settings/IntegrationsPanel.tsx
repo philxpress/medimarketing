@@ -27,7 +27,7 @@ export function IntegrationsPanel({
     if (status === "connected") setBanner(`${cap(integ)} mailbox connected.`);
     else if (error === "norefresh")
       setBanner(
-        `${cap(integ)} did not return a refresh token. Remove MedReach from your account's app permissions, then reconnect.`
+        `${cap(integ)} did not return a refresh token. Remove MediReach from your account's app permissions, then reconnect.`
       );
     else if (error) setBanner(`${cap(integ)} connection failed: ${error}`);
   }, [params]);
@@ -90,12 +90,12 @@ function Card({
           <div className="font-medium text-slate-900">{name}</div>
           <div className="text-sm text-slate-500">{desc}</div>
           {connected && (
-            <div className="mt-1 flex items-center gap-1 text-sm text-emerald-600">
+            <div className="mt-1 flex items-center gap-1 text-sm text-neutral-900">
               <CheckCircle2 size={14} /> {conn!.email}
             </div>
           )}
           {conn && conn.status !== "connected" && (
-            <div className="mt-1 flex items-center gap-1 text-sm text-red-600">
+            <div className="mt-1 flex items-center gap-1 text-sm text-neutral-500">
               <XCircle size={14} /> {conn.status}
             </div>
           )}

@@ -19,7 +19,7 @@ export default async function HistoryPage() {
         <div className="card py-14 text-center">
           <HistoryIcon className="mx-auto mb-3 text-slate-300" size={36} />
           <p className="font-medium text-slate-700">No activity yet</p>
-          <p className="text-sm text-slate-500">Events will appear here as you use MedReach.</p>
+          <p className="text-sm text-slate-500">Events will appear here as you use MediReach.</p>
         </div>
       ) : (
         <div className="card p-0">

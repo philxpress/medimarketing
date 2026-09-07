@@ -63,7 +63,7 @@ export default async function CampaignsPage() {
                   <td className="px-6 py-3 text-slate-600">
                     {c.stats.sent}/{c.stats.total}
                     {c.stats.failed > 0 && (
-                      <span className="ml-2 text-red-500">{c.stats.failed} failed</span>
+                      <span className="ml-2 font-medium text-neutral-900">{c.stats.failed} failed</span>
                     )}
                   </td>
                   <td className="px-6 py-3">

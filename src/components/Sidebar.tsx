@@ -42,7 +42,7 @@ export function Sidebar({
           <Activity size={20} />
         </span>
         <div>
-          <div className="font-bold leading-tight text-slate-900">MedReach</div>
+          <div className="font-bold leading-tight text-slate-900">MediReach</div>
           <div className="max-w-[9rem] truncate text-xs text-slate-400">{orgName}</div>
         </div>
       </div>

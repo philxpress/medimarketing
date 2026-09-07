@@ -61,7 +61,7 @@ export default function LoginPage() {
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             autoFocus
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-neutral-900">{error}</p>}
           <button className="btn-primary w-full" disabled={busy || code.length !== 6}>
             {busy ? "Verifying…" : "Verify"}
           </button>
@@ -71,7 +71,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell title="Sign in to MedReach" subtitle="Compliant email marketing for the medical sector.">
+    <AuthShell title="Sign in to MediReach" subtitle="Compliant email marketing for the medical sector.">
       <ProviderButtons
         onGoogle={() => run(loginWithGoogle)}
         onMicrosoft={() => run(loginWithMicrosoft)}
@@ -107,7 +107,7 @@ export default function LoginPage() {
             required
           />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-neutral-900">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>

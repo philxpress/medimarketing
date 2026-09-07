@@ -69,7 +69,7 @@ export default function SignupPage() {
           />
           <p className="mt-1 text-xs text-slate-400">At least 8 characters. You can enable 2FA after signing in.</p>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-neutral-900">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Creating…" : "Create account"}
         </button>

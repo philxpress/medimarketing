@@ -24,7 +24,7 @@ function encodeHeader(value: string): string {
 
 /** Returns a raw RFC 5322 message string. */
 export function buildMime(email: OutgoingEmail): string {
-  const boundary = "medreach_" + Math.random().toString(36).slice(2);
+  const boundary = "medireach_" + Math.random().toString(36).slice(2);
   const headers: string[] = [
     `From: ${encodeHeader(email.fromName)} <${email.fromEmail}>`,
     `To: ${email.to}`,

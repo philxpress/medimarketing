@@ -1,4 +1,4 @@
-# MedReach
+# MediReach
 
 Email marketing platform for the medical sector. Send personalized, compliant
 campaigns to clinics and practices from your own Gmail or Microsoft 365 mailbox,

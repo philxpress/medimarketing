@@ -1,14 +1,14 @@
 {
-  "name": "medreach",
+  "name": "medireach",
   "version": "0.1.0",
   "private": true,
-  "description": "MedReach — email marketing platform for the medical sector",
+  "description": "MediReach — email marketing platform for the medical sector",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx scripts/seed.ts",
+    "check:firebase": "tsx scripts/check-firebase.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

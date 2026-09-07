@@ -185,9 +185,9 @@ export function ContactsClient({
                     <td className="py-2 pr-4 text-slate-500">{c.specialty ?? "—"}</td>
                     <td className="py-2">
                       {c.subscribed ? (
-                        <span className="badge bg-emerald-100 text-emerald-700">Subscribed</span>
+                        <span className="badge bg-neutral-900 text-white">Subscribed</span>
                       ) : (
-                        <span className="badge bg-red-100 text-red-700">Unsubscribed</span>
+                        <span className="badge bg-white text-neutral-500 ring-1 ring-inset ring-neutral-300">Unsubscribed</span>
                       )}
                     </td>
                   </tr>

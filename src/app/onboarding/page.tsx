@@ -70,7 +70,7 @@ export default function OnboardingPage() {
             onChange={(e) => setReplyToEmail(e.target.value)}
           />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-neutral-900">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Saving…" : "Continue"}
         </button>

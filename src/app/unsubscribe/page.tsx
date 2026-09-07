@@ -39,12 +39,12 @@ export default async function UnsubscribePage({
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
             <Activity size={18} />
           </span>
-          <span className="text-xl font-bold text-slate-900">MedReach</span>
+          <span className="text-xl font-bold text-slate-900">MediReach</span>
         </div>
         <div className="card">
           {ok ? (
             <>
-              <CheckCircle2 className="mx-auto mb-3 text-emerald-500" size={40} />
+              <CheckCircle2 className="mx-auto mb-3 text-neutral-900" size={40} />
               <h1 className="text-lg font-semibold text-slate-900">You&apos;re unsubscribed</h1>
               <p className="mt-2 text-sm text-slate-500">
                 {email && <span className="font-medium">{email}</span>} will no longer receive

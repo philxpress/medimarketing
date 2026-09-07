@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// MedReach Firestore rules.
+// MediReach Firestore rules.
 //
 // All privileged writes go through the Next.js server (Firebase Admin SDK),
 // which bypasses these rules. Client SDK access is therefore read-mostly and

@@ -1,5 +1,5 @@
 /**
- * MedReach data model — shared across client and server.
+ * MediReach data model — shared across client and server.
  *
  * Firestore layout (all under an org for multi-tenant isolation):
  *   orgs/{orgId}

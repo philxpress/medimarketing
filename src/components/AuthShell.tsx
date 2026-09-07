@@ -10,13 +10,13 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-teal-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-neutral-100 via-white to-neutral-200 p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-2">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white">
             <Activity size={22} />
           </span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900">MedReach</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900">MediReach</span>
         </div>
         <div className="card">
           <h1 className="text-xl font-semibold text-slate-900">{title}</h1>

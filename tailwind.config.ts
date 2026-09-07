@@ -8,22 +8,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Calm, clinical brand palette
+        // Monochrome "brand" ramp — black/white/grey. Keeps every `brand-*`
+        // utility working while rendering the UI in greyscale.
         brand: {
-          50: "#eef6ff",
-          100: "#d9ebff",
-          200: "#bcdcff",
-          300: "#8ec6ff",
-          400: "#59a6ff",
-          500: "#3385fb",
-          600: "#1f66f0",
-          700: "#1751dd",
-          800: "#1943b3",
-          900: "#1a3d8d",
+          50: "#f5f5f5",
+          100: "#e5e5e5",
+          200: "#d4d4d4",
+          300: "#a3a3a3",
+          400: "#525252",
+          500: "#404040",
+          600: "#171717",
+          700: "#000000",
+          800: "#000000",
+          900: "#000000",
         },
+        // Secondary accent, also greyscale.
         teal: {
-          500: "#0d9488",
-          600: "#0f766e",
+          500: "#404040",
+          600: "#262626",
         },
       },
       fontFamily: {

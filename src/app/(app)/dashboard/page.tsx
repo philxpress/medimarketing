@@ -49,9 +49,9 @@ export default async function DashboardPage() {
       />
 
       {needsSetup && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <AlertTriangle className="mt-0.5 shrink-0 text-amber-600" size={20} />
-          <div className="text-sm text-amber-800">
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-neutral-300 bg-neutral-100 p-4">
+          <AlertTriangle className="mt-0.5 shrink-0 text-neutral-700" size={20} />
+          <div className="text-sm text-neutral-700">
             <p className="font-medium">Finish setting up before you send</p>
             <ul className="mt-1 list-disc space-y-0.5 pl-5">
               {!org.postalAddress && (
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
             <ul className="space-y-2">
               {connected.map((i) => (
                 <li key={i.provider} className="flex items-center gap-2 text-sm">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="h-2 w-2 rounded-full bg-neutral-900" />
                   <span className="capitalize text-slate-600">{i.provider}</span>
                   <span className="truncate text-slate-400">· {i.connectedEmail}</span>
                 </li>
@@ -174,7 +174,7 @@ function Stat({
 }) {
   return (
     <div className="card p-4">
-      <Icon size={20} className={tone === "warn" ? "text-amber-500" : "text-brand-500"} />
+      <Icon size={20} className={tone === "warn" ? "text-neutral-900" : "text-neutral-500"} />
       <div className="mt-3 text-2xl font-bold text-slate-900">{value.toLocaleString()}</div>
       <div className="text-xs text-slate-500">{label}</div>
     </div>

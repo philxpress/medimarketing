@@ -57,7 +57,7 @@ export function MfaPanel({
   if (enrolled) {
     return (
       <div className="card flex items-center gap-3">
-        <ShieldCheck className="text-emerald-600" size={22} />
+        <ShieldCheck className="text-neutral-900" size={22} />
         <div>
           <div className="font-medium text-slate-900">Two-factor authentication is on</div>
           <div className="text-sm text-slate-500">
@@ -112,7 +112,7 @@ export function MfaPanel({
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               />
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-neutral-900">{error}</p>}
               <div className="flex gap-2">
                 <button className="btn-secondary" onClick={() => setStep("idle")} disabled={busy}>
                   Cancel
@@ -126,7 +126,7 @@ export function MfaPanel({
         </div>
       )}
 
-      {error && step === "idle" && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && step === "idle" && <p className="mt-3 text-sm text-neutral-900">{error}</p>}
     </div>
   );
 }

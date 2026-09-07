@@ -119,7 +119,7 @@ export async function startTotpEnrollment(
   if (!user) throw new Error("Not signed in");
   const session = await multiFactor(user).getSession();
   const secret = await TotpMultiFactorGenerator.generateSecret(session);
-  const qrUri = secret.generateQrCodeUrl(accountName, "MedReach");
+  const qrUri = secret.generateQrCodeUrl(accountName, "MediReach");
   return { secret, qrUri, sharedKey: secret.secretKey };
 }
 
