@@ -85,6 +85,28 @@ export async function getTemplates(orgId: string): Promise<Template[]> {
   return snap.docs.map((d) => d.data() as Template);
 }
 
+export async function getMembers(
+  orgId: string
+): Promise<import("@/lib/types").Member[]> {
+  const snap = await org(orgId).collection("members").orderBy("createdAt", "asc").get();
+  return snap.docs.map((d) => d.data() as import("@/lib/types").Member);
+}
+
+/** Pending invitations for an org (top-level `invites` keyed by email). */
+export async function getInvites(
+  orgId: string
+): Promise<import("@/lib/types").Invite[]> {
+  const snap = await adminDb.collection("invites").where("orgId", "==", orgId).get();
+  return snap.docs
+    .map((d) => d.data() as import("@/lib/types").Invite)
+    .filter((i) => i.status === "pending");
+}
+
+/** Doc id for an invite = base64url of the lowercased email. */
+export function inviteKey(email: string): string {
+  return Buffer.from(email.trim().toLowerCase()).toString("base64url");
+}
+
 export async function getJourneys(
   orgId: string
 ): Promise<import("@/lib/types").Journey[]> {

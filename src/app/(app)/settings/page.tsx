@@ -1,15 +1,20 @@
 import { requireOrg } from "@/lib/auth/session";
-import { getIntegrations } from "@/lib/data";
+import { getIntegrations, getMembers, getInvites, inviteKey } from "@/lib/data";
 import { PageHeader } from "@/components/PageHeader";
 import { OrgProfileForm } from "@/components/settings/OrgProfileForm";
 import { IntegrationsPanel } from "@/components/settings/IntegrationsPanel";
 import { MfaPanel } from "@/components/settings/MfaPanel";
+import { TeamPanel } from "@/components/settings/TeamPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const { orgId, org, member } = await requireOrg();
-  const integrations = await getIntegrations(orgId);
+  const { orgId, org, member, user } = await requireOrg();
+  const [integrations, members, invites] = await Promise.all([
+    getIntegrations(orgId),
+    getMembers(orgId),
+    getInvites(orgId),
+  ]);
   const byProvider = {
     gmail: integrations.find((i) => i.provider === "gmail") ?? null,
     microsoft: integrations.find((i) => i.provider === "microsoft") ?? null,
@@ -31,6 +36,28 @@ export default async function SettingsPage() {
                 status: byProvider.microsoft.status,
               }
             }
+          />
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-900">
+            Team members
+          </h2>
+          <TeamPanel
+            currentUid={user.uid}
+            canManage={member.role !== "member"}
+            members={members.map((m) => ({
+              uid: m.uid,
+              email: m.email,
+              displayName: m.displayName,
+              role: m.role,
+              mfaEnrolled: m.mfaEnrolled,
+            }))}
+            invites={invites.map((i) => ({
+              email: i.email,
+              role: i.role,
+              key: inviteKey(i.email),
+            }))}
           />
         </section>
 

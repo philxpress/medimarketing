@@ -34,6 +34,18 @@ export interface Member {
   createdAt: number;
 }
 
+/** A pending invitation for someone to join an org. Keyed by lowercased email. */
+export interface Invite {
+  email: string;
+  orgId: string;
+  orgName: string;
+  role: Role;
+  invitedByUid: string;
+  invitedByName: string;
+  status: "pending" | "accepted" | "revoked";
+  createdAt: number;
+}
+
 export type IntegrationProvider = "gmail" | "microsoft";
 
 export interface Integration {
