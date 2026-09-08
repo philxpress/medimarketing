@@ -42,7 +42,6 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         title={`Welcome back, ${member.displayName?.split(" ")[0] || "there"}`}
-        description="Your email marketing at a glance."
         action={
           <Link href="/campaigns/new" className="btn-primary">
             <Sparkles size={16} /> New campaign

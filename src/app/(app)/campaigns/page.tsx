@@ -15,7 +15,6 @@ export default async function CampaignsPage() {
     <>
       <PageHeader
         title="Campaigns"
-        description="Draft, review, and send your email campaigns."
         action={
           <Link href="/campaigns/new" className="btn-primary">
             <Sparkles size={16} /> New campaign

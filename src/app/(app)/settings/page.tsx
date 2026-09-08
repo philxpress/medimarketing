@@ -22,7 +22,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" description="Workspace, mailboxes, and account security." />
+      <PageHeader title="Settings" />
       <div className="space-y-6">
         <section>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-900">

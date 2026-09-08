@@ -40,10 +40,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <AuthShell
-      title="Set up your workspace"
-      subtitle="A couple of details we need before you can send email."
-    >
+    <AuthShell title="Set up your workspace">
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label className="label">Organization / practice name</label>

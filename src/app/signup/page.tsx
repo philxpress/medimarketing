@@ -33,7 +33,7 @@ export default function SignupPage() {
   }
 
   return (
-    <AuthShell title="Create your account" subtitle="Start sending compliant campaigns in minutes.">
+    <AuthShell title="Create your account">
       <ProviderButtons
         onGoogle={() => run(loginWithGoogle)}
         onMicrosoft={() => run(loginWithMicrosoft)}

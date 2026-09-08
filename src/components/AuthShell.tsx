@@ -2,11 +2,9 @@ import { Activity } from "lucide-react";
 
 export function AuthShell({
   title,
-  subtitle,
   children,
 }: {
   title: string;
-  subtitle?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -19,8 +17,7 @@ export function AuthShell({
           <span className="text-2xl font-bold tracking-tight text-neutral-900">MediReach</span>
         </div>
         <div className="card">
-          <h1 className="text-xl font-semibold text-neutral-900">{title}</h1>
-          {subtitle && <p className="mt-1 mb-6 text-sm text-neutral-900">{subtitle}</p>}
+          <h1 className="mb-6 text-xl font-semibold text-neutral-900">{title}</h1>
           {children}
         </div>
         <p className="mt-4 text-center text-xs text-neutral-900">

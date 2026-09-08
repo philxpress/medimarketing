@@ -42,7 +42,7 @@ export default async function NewCampaignPage() {
 
   return (
     <>
-      <PageHeader title="New campaign" description="Compose, personalize, and send." />
+      <PageHeader title="New campaign" />
 
       {!ready && (
         <div className="mb-6 rounded-xl border border-neutral-300 bg-neutral-100 p-4 text-sm text-neutral-900">

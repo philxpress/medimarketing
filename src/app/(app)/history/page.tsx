@@ -15,7 +15,6 @@ export default async function HistoryPage() {
     <>
       <PageHeader
         title="Email history & audit log"
-        description="An immutable record of sends, consent changes, and account events."
       />
       {events.length === 0 ? (
         <div className="card py-14 text-center">

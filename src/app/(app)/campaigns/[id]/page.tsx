@@ -44,7 +44,6 @@ export default async function CampaignDetailPage({
       </Link>
       <PageHeader
         title={campaign.name}
-        description={campaign.subject}
         action={
           <div className="flex items-center gap-3">
             <DuplicateButton campaignId={campaign.id} />

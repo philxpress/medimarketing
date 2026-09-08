@@ -13,7 +13,6 @@ export default async function ContactsPage() {
     <>
       <PageHeader
         title="Contacts & Lists"
-        description="Upload your own CSV, or use the provided sample list to get started."
       />
       <ContactsClient
         initialContacts={contacts}

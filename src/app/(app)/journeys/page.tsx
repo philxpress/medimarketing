@@ -21,7 +21,6 @@ export default async function JourneysPage() {
     <>
       <PageHeader
         title="Automations"
-        description="Drip sequences that send a series of emails over time. Enroll a list and let it run."
       />
       {!org.postalAddress || connected.length === 0 ? (
         <div className="mb-6 rounded-xl border border-neutral-300 bg-neutral-100 p-4 text-sm text-neutral-900">

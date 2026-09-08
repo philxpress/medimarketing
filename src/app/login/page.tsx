@@ -42,7 +42,7 @@ export default function LoginPage() {
 
   if (mfaResolver) {
     return (
-      <AuthShell title="Two-factor authentication" subtitle="Enter the 6-digit code from your authenticator app.">
+      <AuthShell title="Two-factor authentication">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -71,7 +71,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell title="Sign in to MediReach" subtitle="Compliant email marketing for the medical sector.">
+    <AuthShell title="Sign in to MediReach">
       <ProviderButtons
         onGoogle={() => run(loginWithGoogle)}
         onMicrosoft={() => run(loginWithMicrosoft)}
