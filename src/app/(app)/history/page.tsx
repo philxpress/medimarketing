@@ -2,11 +2,13 @@ import { requireOrg } from "@/lib/auth/session";
 import { getRecentEvents } from "@/lib/data";
 import { PageHeader } from "@/components/PageHeader";
 import { History as HistoryIcon } from "lucide-react";
+import { formatInTz, DEFAULT_TIMEZONE } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  const { orgId } = await requireOrg();
+  const { orgId, org } = await requireOrg();
+  const tz = org.timezone ?? DEFAULT_TIMEZONE;
   const events = await getRecentEvents(orgId, 200);
 
   return (
@@ -29,8 +31,8 @@ export default async function HistoryPage() {
                 <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-400" />
                 <div className="flex-1">
                   <div className="text-sm text-neutral-900">{e.summary}</div>
-                  <div className="text-xs text-neutral-900">
-                    {new Date(e.createdAt).toLocaleString()} · {e.type}
+                  <div className="text-xs text-neutral-500">
+                    {formatInTz(e.createdAt, tz)} · {e.type}
                   </div>
                 </div>
               </li>

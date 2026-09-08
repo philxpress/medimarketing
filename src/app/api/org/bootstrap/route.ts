@@ -64,6 +64,7 @@ export async function POST() {
     name: user.email ? `${user.email.split("@")[0]}'s workspace` : "My workspace",
     createdAt: now,
     postalAddress: "",
+    timezone: "Australia/Sydney",
   };
   const member: Member = {
     uid: user.uid,

@@ -76,6 +76,7 @@ export default async function SettingsPage() {
             name={org.name}
             postalAddress={org.postalAddress}
             replyToEmail={org.replyToEmail ?? ""}
+            timezone={org.timezone ?? ""}
             canEdit={member.role !== "member"}
           />
         </section>

@@ -18,6 +18,7 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import type { Attachment } from "@/lib/types";
+import { zonedTimeToEpoch, tzAbbrev } from "@/lib/tz";
 
 interface Mailbox {
   provider: "gmail" | "microsoft";
@@ -56,12 +57,14 @@ export function Composer({
   lists,
   templates = [],
   facets = { specialties: [], cities: [], tags: [] },
+  timezone = "Australia/Sydney",
   imageEnabled,
 }: {
   mailboxes: Mailbox[];
   lists: ListSummary[];
   templates?: TemplateOption[];
   facets?: Facets;
+  timezone?: string;
   imageEnabled: boolean;
 }) {
   const router = useRouter();
@@ -244,8 +247,9 @@ export function Composer({
     setMsg(null);
     try {
       const mb = mailboxes[fromIdx];
+      // Interpret the picked wall-clock time in the workspace's timezone.
       const scheduledAt =
-        mode === "schedule" ? new Date(scheduleAt).getTime() : undefined;
+        mode === "schedule" ? zonedTimeToEpoch(scheduleAt, timezone) : undefined;
       if (mode === "schedule" && scheduledAt && scheduledAt <= Date.now()) {
         throw new Error("Scheduled time must be in the future.");
       }
@@ -572,7 +576,8 @@ export function Composer({
                 onChange={(e) => setScheduleAt(e.target.value)}
               />
               <p className="mt-1 text-xs text-neutral-500">
-                Processed every ~15 min by a scheduled job. Uses your browser&apos;s timezone.
+                Interpreted in your workspace timezone ({tzAbbrev(timezone)}). Change it in
+                Settings. Processing runs daily on the free plan (see Settings).
               </p>
             </div>
           )}

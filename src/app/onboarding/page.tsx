@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthShell } from "@/components/AuthShell";
+import { AUSTRALIAN_TIMEZONES, DEFAULT_TIMEZONE } from "@/lib/tz";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [postalAddress, setPostalAddress] = useState("");
   const [replyToEmail, setReplyToEmail] = useState("");
+  const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -25,7 +27,7 @@ export default function OnboardingPage() {
       const res = await fetch("/api/org/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, postalAddress, replyToEmail }),
+        body: JSON.stringify({ name, postalAddress, replyToEmail, timezone }),
       });
       if (!res.ok) throw new Error(await res.text());
       router.push("/dashboard");
@@ -69,6 +71,20 @@ export default function OnboardingPage() {
             value={replyToEmail}
             onChange={(e) => setReplyToEmail(e.target.value)}
           />
+        </div>
+        <div>
+          <label className="label">Timezone</label>
+          <select
+            className="input"
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+          >
+            {AUSTRALIAN_TIMEZONES.map((z) => (
+              <option key={z.value} value={z.value}>
+                {z.label}
+              </option>
+            ))}
+          </select>
         </div>
         {error && <p className="text-sm text-neutral-900">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>

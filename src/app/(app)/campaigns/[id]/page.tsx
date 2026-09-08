@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SendButton } from "@/components/SendButton";
 import { DuplicateButton } from "@/components/DuplicateButton";
+import { formatInTz, DEFAULT_TIMEZONE } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,8 @@ export default async function CampaignDetailPage({
 }: {
   params: { id: string };
 }) {
-  const { orgId } = await requireOrg();
+  const { orgId, org } = await requireOrg();
+  const tz = org.timezone ?? DEFAULT_TIMEZONE;
   const campaign = await getCampaign(orgId, params.id);
   if (!campaign) notFound();
   const recipients =
@@ -149,11 +151,11 @@ export default async function CampaignDetailPage({
                 />
               )}
               {campaign.scheduledAt && (
-                <Row k="Scheduled" v={new Date(campaign.scheduledAt).toLocaleString()} />
+                <Row k="Scheduled" v={formatInTz(campaign.scheduledAt, tz)} />
               )}
-              <Row k="Created" v={new Date(campaign.createdAt).toLocaleString()} />
+              <Row k="Created" v={formatInTz(campaign.createdAt, tz)} />
               {campaign.completedAt && (
-                <Row k="Completed" v={new Date(campaign.completedAt).toLocaleString()} />
+                <Row k="Completed" v={formatInTz(campaign.completedAt, tz)} />
               )}
             </dl>
           </div>

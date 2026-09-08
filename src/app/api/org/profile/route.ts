@@ -9,6 +9,7 @@ const schema = z.object({
   name: z.string().min(1).max(120),
   postalAddress: z.string().min(1).max(400),
   replyToEmail: z.string().email().optional().or(z.literal("")),
+  timezone: z.string().max(64).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
           name: body.name,
           postalAddress: body.postalAddress,
           replyToEmail: body.replyToEmail || undefined,
+          ...(body.timezone ? { timezone: body.timezone } : {}),
         },
         { merge: true }
       );

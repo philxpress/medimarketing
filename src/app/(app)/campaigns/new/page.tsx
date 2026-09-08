@@ -62,6 +62,7 @@ export default async function NewCampaignPage() {
         lists={lists.map((l) => ({ id: l.id, name: l.name, count: l.contactIds.length }))}
         templates={templateOptions}
         facets={facets}
+        timezone={org.timezone ?? "Australia/Sydney"}
         imageEnabled
       />
     </>

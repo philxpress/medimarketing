@@ -23,6 +23,8 @@ export interface Org {
   // CAN-SPAM requires a physical postal address in every commercial email.
   postalAddress: string;
   replyToEmail?: string;
+  /** IANA timezone for scheduling & display (e.g. "Australia/Sydney"). */
+  timezone?: string;
 }
 
 export interface Member {
