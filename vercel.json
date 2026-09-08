@@ -3,11 +3,11 @@
   "crons": [
     {
       "path": "/api/cron/process-scheduled",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/process-journeys",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 20 * * *"
     }
   ]
 }
