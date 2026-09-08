@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Database, ListChecks, Search, UserPlus, X, Trash2 } from "lucide-react";
+import { Upload, Database, ListChecks, Search, UserPlus, X, Trash2, Download } from "lucide-react";
 import type { Contact } from "@/lib/types";
 
 interface ListSummary {
@@ -86,10 +86,17 @@ export function ContactsClient({
             <Upload size={18} className="text-neutral-900" />
             <h2 className="font-semibold text-neutral-900">Upload a CSV</h2>
           </div>
-          <p className="mb-3 text-sm text-neutral-500">
+          <p className="mb-2 text-sm text-neutral-500">
             Columns: <code className="text-xs">email, firstName, lastName, practiceName,
             specialty, city</code>. Extra columns become custom merge fields.
           </p>
+          <a
+            href="/contacts-template.csv"
+            download="medireach-contacts-template.csv"
+            className="mb-3 inline-flex items-center gap-1 text-sm text-brand-600 hover:underline"
+          >
+            <Download size={14} /> Download CSV template
+          </a>
           <input
             className="input mb-2"
             placeholder="Optional: name this list"
