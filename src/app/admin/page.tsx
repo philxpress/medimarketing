@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Building2, Stethoscope, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { getAllOrgs, countClinics } from "@/lib/admin";
+import { getAllOrgs, getClinicMeta } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
-  const [orgs, clinics] = await Promise.all([getAllOrgs(), countClinics()]);
+  const [orgs, clinicMeta] = await Promise.all([getAllOrgs(), getClinicMeta()]);
+  const clinics = clinicMeta?.count ?? 0;
 
   return (
     <>

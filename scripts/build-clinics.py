@@ -231,6 +231,31 @@ with open(OUT, "w", encoding="utf-8", newline="\n") as out:
         # no raw separator survives to break NDJSON line-splitting in Node.
         out.write(json.dumps(c) + "\n")
 
+# ── postcode centroids + suburb→postcode, bundled into the app ────────────
+# Lets the admin search resolve a postcode/suburb to a map centre for radius
+# search without any Firestore reads. Small, non-sensitive (public centroids).
+pc_geo = defaultdict(lambda: [0.0, 0.0, 0])
+sub_counts = defaultdict(int)  # (suburb_norm, postcode) -> clinic count
+for c in kept:
+    if c["postcode"] and c["lat"] is not None and c["lng"] is not None:
+        acc = pc_geo[c["postcode"]]; acc[0] += c["lat"]; acc[1] += c["lng"]; acc[2] += 1
+    if c["suburb"] and c["postcode"]:
+        sub_counts[(norm(c["suburb"]), c["postcode"])] += 1
+by_postcode = {pc: [round(a[0] / a[2], 5), round(a[1] / a[2], 5)] for pc, a in pc_geo.items() if a[2]}
+by_suburb = {}
+for (sub, pc), n in sub_counts.items():
+    # A suburb name can map to several postcodes; keep the busiest, and only if
+    # that postcode has a centroid.
+    if pc not in by_postcode:
+        continue
+    if sub not in by_suburb or n > sub_counts[(sub, by_suburb[sub])]:
+        by_suburb[sub] = pc
+PC_OUT = os.path.join(ROOT, "src", "lib", "data", "postcodes.json")
+os.makedirs(os.path.dirname(PC_OUT), exist_ok=True)
+with open(PC_OUT, "w", encoding="utf-8", newline="\n") as f:
+    json.dump({"byPostcode": by_postcode, "bySuburb": by_suburb}, f, separators=(",", ":"))
+print(f"postcode lookup written: {len(by_postcode)} postcodes, {len(by_suburb)} suburbs -> {PC_OUT}")
+
 # ── report ────────────────────────────────────────────────────────────────
 def cnt(f): return sum(1 for c in kept if c[f])
 print(f"dropped (no contact method): {dropped_nocontact}")

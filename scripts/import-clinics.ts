@@ -119,9 +119,18 @@ async function main() {
   }
   await flush();
 
+  // Store the total so the admin UI can show it with a single doc read
+  // instead of counting the whole collection.
+  if (store) {
+    await store.collection("meta").doc("clinics").set({
+      count: total,
+      updatedAt: Date.now(),
+    });
+  }
+
   console.log(
     COMMIT
-      ? `✓ Imported ${total} clinics into "${COLLECTION}".`
+      ? `✓ Imported ${total} clinics into "${COLLECTION}" (meta/clinics count set).`
       : `✓ Parsed ${total} clinics. Re-run with --commit to write them to Firestore.`
   );
   process.exit(0);
