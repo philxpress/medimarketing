@@ -67,11 +67,18 @@ export async function sendCampaign(
   if (!integration || integration.status !== "connected") {
     throw new Error(`No connected ${campaign.fromProvider} mailbox.`);
   }
-  if (!campaign.listId) throw new Error("Campaign has no recipient list.");
-
-  const list = await getList(orgId, campaign.listId);
-  const allContacts = await getContactsByIds(orgId, list?.contactIds ?? []);
-  const contacts = allContacts.filter((c) => matchesSegment(c, campaign.segment));
+  // Resolve who to send to. When the campaign carries an explicit recipient
+  // selection (chosen in the wizard's recipient step) that is the final list.
+  // Otherwise fall back to the whole list narrowed by the segment filter.
+  let contacts: Contact[];
+  if (campaign.recipientIds && campaign.recipientIds.length > 0) {
+    contacts = await getContactsByIds(orgId, campaign.recipientIds);
+  } else {
+    if (!campaign.listId) throw new Error("Campaign has no recipient list.");
+    const list = await getList(orgId, campaign.listId);
+    const allContacts = await getContactsByIds(orgId, list?.contactIds ?? []);
+    contacts = allContacts.filter((c) => matchesSegment(c, campaign.segment));
+  }
 
   const campaignRef = adminDb
     .collection("orgs")

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireOrg } from "@/lib/auth/session";
 import { getContacts, getIntegrations, getLists, getTemplates } from "@/lib/data";
 import { PageHeader } from "@/components/PageHeader";
-import { Composer } from "@/components/Composer";
+import { CampaignWizard } from "@/components/CampaignWizard";
 import { STARTER_TEMPLATES } from "@/lib/starterTemplates";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export default async function NewCampaignPage() {
     getIntegrations(orgId),
     getLists(orgId),
     getTemplates(orgId),
-    getContacts(orgId, 2000),
+    getContacts(orgId, 5000),
   ]);
   const connected = integrations
     .filter((i) => i.status === "connected")
@@ -40,6 +40,19 @@ export default async function NewCampaignPage() {
     ...templates.map((t) => ({ id: t.id, name: t.name, subject: t.subject, body: t.body })),
   ];
 
+  // Lightweight contact projection so the wizard can resolve list membership and
+  // let the user search/tick individual recipients (step 5) without a round-trip.
+  const contactRows = contacts.map((c) => ({
+    id: c.id,
+    email: c.email,
+    name: [c.firstName, c.lastName].filter(Boolean).join(" ").trim(),
+    practiceName: c.practiceName ?? "",
+    specialty: c.specialty ?? "",
+    city: c.city ?? "",
+    tags: c.tags ?? [],
+    subscribed: c.subscribed,
+  }));
+
   return (
     <>
       <PageHeader title="New campaign" />
@@ -57,9 +70,14 @@ export default async function NewCampaignPage() {
         </div>
       )}
 
-      <Composer
+      <CampaignWizard
         mailboxes={connected}
-        lists={lists.map((l) => ({ id: l.id, name: l.name, count: l.contactIds.length }))}
+        lists={lists.map((l) => ({
+          id: l.id,
+          name: l.name,
+          contactIds: l.contactIds,
+        }))}
+        contacts={contactRows}
         templates={templateOptions}
         facets={facets}
         timezone={org.timezone ?? "Australia/Sydney"}

@@ -29,6 +29,8 @@ const schema = z.object({
       tag: z.string().optional(),
     })
     .optional(),
+  /** Final set of contact IDs to send to (from the wizard's recipient step). */
+  recipientIds: z.array(z.string().min(1)).max(50000).optional(),
   /** Epoch ms; when set (and in the future), the campaign is scheduled. */
   scheduledAt: z.number().int().positive().optional(),
 });
@@ -39,8 +41,12 @@ export async function POST(req: NextRequest) {
     const { orgId, user } = await requireOrg();
     const body = schema.parse(await req.json());
 
+    // Prefer the explicit recipient selection for the headline count; fall back
+    // to the whole list when the campaign was created without one.
     let total = 0;
-    if (body.listId) {
+    if (body.recipientIds && body.recipientIds.length > 0) {
+      total = body.recipientIds.length;
+    } else if (body.listId) {
       const list = await getList(orgId, body.listId);
       total = list?.contactIds.length ?? 0;
     }
@@ -60,6 +66,9 @@ export async function POST(req: NextRequest) {
       attachments: body.attachments ?? [],
       ...(body.segment && Object.values(body.segment).some(Boolean)
         ? { segment: body.segment }
+        : {}),
+      ...(body.recipientIds && body.recipientIds.length > 0
+        ? { recipientIds: body.recipientIds }
         : {}),
       stats: { total, sent: 0, failed: 0, skipped: 0, opened: 0, clicked: 0 },
       status: isScheduled ? "scheduled" : "draft",

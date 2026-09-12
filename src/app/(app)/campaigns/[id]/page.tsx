@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Paperclip, MousePointerClick, MailOpen } from "lucide-react";
+import {
+  ArrowLeft,
+  Paperclip,
+  MousePointerClick,
+  MailOpen,
+  MailCheck,
+  MailX,
+  UserX,
+} from "lucide-react";
 import { requireOrg } from "@/lib/auth/session";
 import { getCampaign, getRecipients } from "@/lib/data";
 import { PageHeader } from "@/components/PageHeader";
@@ -53,8 +61,19 @@ export default async function CampaignDetailPage({
       />
 
       {showAnalytics && (
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Metric label="Delivered" value={s.sent} sub={`${s.failed} failed`} />
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <Metric
+            label="Delivered"
+            value={s.sent}
+            sub="accepted"
+            icon={<MailCheck size={16} />}
+          />
+          <Metric
+            label="Bounced"
+            value={s.failed}
+            sub="failed / rejected"
+            icon={<MailX size={16} />}
+          />
           <Metric
             label="Open rate"
             value={`${pct(s.opened)}%`}
@@ -67,7 +86,12 @@ export default async function CampaignDetailPage({
             sub={`${s.clicked} clicked`}
             icon={<MousePointerClick size={16} />}
           />
-          <Metric label="Skipped" value={s.skipped} sub="unsubscribed" />
+          <Metric
+            label="Unsubscribed"
+            value={s.skipped}
+            sub="skipped"
+            icon={<UserX size={16} />}
+          />
         </div>
       )}
 
@@ -104,21 +128,9 @@ export default async function CampaignDetailPage({
                   <tbody className="divide-y divide-slate-50">
                     {recipients.map((r) => (
                       <tr key={r.id}>
-                        <td className="px-6 py-2 text-neutral-900">{r.email}</td>
-                        <td className="px-6 py-2 text-right text-xs text-neutral-500">
-                          {r.openedAt && (
-                            <span className="mr-2 inline-flex items-center gap-1">
-                              <MailOpen size={12} /> opened
-                            </span>
-                          )}
-                          {r.clickedAt && (
-                            <span className="mr-2 inline-flex items-center gap-1">
-                              <MousePointerClick size={12} /> clicked
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-2 text-right">
-                          <RecipientBadge status={r.status} error={r.error} />
+                        <td className="px-6 py-2 align-top text-neutral-900">{r.email}</td>
+                        <td className="px-6 py-2">
+                          <RecipientFlags recipient={r} tz={tz} />
                         </td>
                       </tr>
                     ))}
@@ -206,16 +218,55 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
-function RecipientBadge({ status, error }: { status: string; error?: string }) {
-  const map: Record<string, string> = {
-    sent: "bg-neutral-900 text-white",
-    failed: "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-900",
-    skipped: "bg-neutral-100 text-neutral-500",
-    pending: "bg-neutral-200 text-neutral-700",
-  };
+/** Engagement flags for one recipient: delivery state + open / click activity. */
+function RecipientFlags({
+  recipient: r,
+  tz,
+}: {
+  recipient: import("@/lib/types").Recipient;
+  tz: string;
+}) {
+  const deliveryFlag =
+    r.status === "sent"
+      ? { label: "Delivered", cls: "bg-neutral-900 text-white" }
+      : r.status === "failed"
+        ? {
+            label: "Bounced",
+            cls: "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-900",
+          }
+        : r.status === "skipped"
+          ? { label: "Unsubscribed", cls: "bg-neutral-100 text-neutral-500" }
+          : { label: "Pending", cls: "bg-neutral-200 text-neutral-700" };
+
   return (
-    <span className={`badge ${map[status] ?? map.pending}`} title={error}>
-      {status}
-    </span>
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      <span
+        className={`badge ${deliveryFlag.cls}`}
+        title={r.status === "failed" ? r.error : r.sentAt ? formatInTz(r.sentAt, tz) : undefined}
+      >
+        {deliveryFlag.label}
+      </span>
+      {r.openedAt && (
+        <span
+          className="badge bg-slate-100 text-neutral-900"
+          title={`Opened ${formatInTz(r.openedAt, tz)}${
+            r.opens && r.opens > 1 ? ` · ${r.opens} times` : ""
+          }`}
+        >
+          <MailOpen size={12} className="mr-1" /> Opened
+          {r.opens && r.opens > 1 ? ` ×${r.opens}` : ""}
+        </span>
+      )}
+      {r.clickedAt && (
+        <span
+          className="badge bg-slate-100 text-neutral-900"
+          title={`Clicked ${formatInTz(r.clickedAt, tz)}${
+            r.lastClickedUrl ? ` · ${r.lastClickedUrl}` : ""
+          }`}
+        >
+          <MousePointerClick size={12} className="mr-1" /> Clicked
+        </span>
+      )}
+    </div>
   );
 }

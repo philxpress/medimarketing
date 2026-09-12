@@ -127,6 +127,13 @@ export interface Campaign {
   listId?: string;
   /** Optional filter applied to the list at send time (segmentation). */
   segment?: CampaignSegment;
+  /**
+   * Explicit set of contact IDs to send to, chosen in the wizard's recipient
+   * step. When present it is the final send list (list + segment already
+   * applied, individual recipients ticked off). When absent, the send falls
+   * back to the whole list filtered by `segment` — older campaigns.
+   */
+  recipientIds?: string[];
   attachments?: Attachment[];
   /** Denormalized counts for the dashboard. */
   stats: {
