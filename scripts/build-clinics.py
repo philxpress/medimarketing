@@ -63,6 +63,41 @@ def valid_name(name: str, address: str) -> str:
 def clean(s: str) -> str:
     return (s or "").strip()
 
+# ── clinic type extraction ────────────────────────────────────────────────
+# Types come from the two non-HotDoc sources:
+#   * healthdirect_service_types (clinic-level, split on "|" and ";")
+#   * specialties (practitioner-level, split on ";", accumulated across ALL
+#     the clinic's rows)
+# The two sources label the same profession differently, so a light alignment
+# collapses the obvious GP variants to a single canonical label; everything
+# else is kept verbatim.
+_GP_CANON = "GP (General Practitioner)"
+_GP_VARIANTS = {
+    "gp (general practice)",
+    "gp (general practitioner)",
+    "general practitioner",
+    "general practice",
+    "gp",
+}
+
+def canon_type(t: str) -> str:
+    tl = t.strip().lower()
+    if tl in _GP_VARIANTS:
+        return _GP_CANON
+    return t.strip()
+
+def split_types(raw: str, seps: str) -> list:
+    """Split a raw type field on every char in `seps`, trim, canonicalize."""
+    parts = [raw or ""]
+    for sep in seps:
+        parts = [p for chunk in parts for p in chunk.split(sep)]
+    out = []
+    for p in parts:
+        p = p.strip()
+        if p:
+            out.append(canon_type(p))
+    return out
+
 def fnum(s):
     try:
         v = float(s)
@@ -157,6 +192,11 @@ print(f"postcode centroids derived: {len(centroid)}")
 
 # ── 4. walk final_list, dedupe clinics, apply precedence ──────────────────
 clinics = {}
+# Types accumulate across ALL rows of a clinic (the loop below keeps only the
+# first row for details, but specialties live on every practitioner row), keyed
+# the same way as `clinics`. Value: lowercase -> display, for case-insensitive
+# de-duplication that preserves the first-seen casing.
+types_by_key = defaultdict(dict)
 for fn in sorted(glob.glob(os.path.join(FINAL, "*.csv"))):
     if os.path.basename(fn) == "specialties.csv":
         continue
@@ -165,6 +205,13 @@ for fn in sorted(glob.glob(os.path.join(FINAL, "*.csv"))):
         for row in csv.DictReader(fh):
             pc = clean(row.get("postcode"))
             key = f"{pc}|{norm(row.get('clinic_name'))}|{norm(row.get('clinic_address'))}"
+            # Accumulate types for EVERY row of this clinic (before the dedup
+            # skip), so HealthShare specialties across all practitioners count.
+            bucket = types_by_key[key]
+            for t in split_types(row.get("healthdirect_service_types"), "|;"):
+                bucket.setdefault(t.lower(), t)
+            for t in split_types(row.get("specialties"), ";"):
+                bucket.setdefault(t.lower(), t)
             if key in clinics:
                 continue
             hd = hotdoc.get(clean(row.get("hotdoc_url")))
@@ -216,6 +263,10 @@ for fn in sorted(glob.glob(os.path.join(FINAL, "*.csv"))):
             }
 print(f"distinct clinics before filter: {len(clinics)}")
 
+# ── 4b. attach accumulated types (from healthdirect + HealthShare) ─────────
+for key, c in clinics.items():
+    c["types"] = sorted(types_by_key[key].values(), key=str.lower)
+
 # ── 5. filter: must have at least one contact method ──────────────────────
 kept, dropped_nocontact = [], 0
 for c in clinics.values():
@@ -256,6 +307,21 @@ with open(PC_OUT, "w", encoding="utf-8", newline="\n") as f:
     json.dump({"byPostcode": by_postcode, "bySuburb": by_suburb}, f, separators=(",", ":"))
 print(f"postcode lookup written: {len(by_postcode)} postcodes, {len(by_suburb)} suburbs -> {PC_OUT}")
 
+# ── clinic-type facet list (top ~60 types by clinic count) ────────────────
+# The dropdown offers these exact strings, so they match stored `types` values.
+type_clinic_counts = defaultdict(int)
+for c in kept:
+    for t in c["types"]:
+        type_clinic_counts[t] += 1
+top_types = sorted(type_clinic_counts.items(), key=lambda kv: (-kv[1], kv[0].lower()))[:60]
+facet = [t for t, _ in top_types]
+TYPES_OUT = os.path.join(ROOT, "src", "lib", "data", "clinic-types.json")
+os.makedirs(os.path.dirname(TYPES_OUT), exist_ok=True)
+with open(TYPES_OUT, "w", encoding="utf-8", newline="\n") as f:
+    json.dump(facet, f, ensure_ascii=True, indent=2)
+    f.write("\n")
+print(f"clinic types written: {len(facet)} facet values (of {len(type_clinic_counts)} distinct) -> {TYPES_OUT}")
+
 # ── report ────────────────────────────────────────────────────────────────
 def cnt(f): return sum(1 for c in kept if c[f])
 print(f"dropped (no contact method): {dropped_nocontact}")
@@ -267,3 +333,6 @@ print("  with email:    %d" % cnt("email"))
 print("  with fax:      %d" % cnt("fax"))
 print("  with geo:      %d" % sum(1 for c in kept if c["geohash"]))
 print("  bookable(HotDoc): %d" % sum(1 for c in kept if c["bookable"]))
+_with_types = sum(1 for c in kept if c["types"])
+print("  with type(s):  %d  (%.1f%% coverage)" % (
+    _with_types, 100.0 * _with_types / len(kept) if kept else 0.0))

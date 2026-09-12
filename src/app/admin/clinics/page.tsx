@@ -2,10 +2,12 @@ import Link from "next/link";
 import { Database, CheckCircle2, Search } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { getClinicMeta, searchClinics } from "@/lib/admin";
+import clinicTypes from "@/lib/data/clinic-types.json";
 
 export const dynamic = "force-dynamic";
 
 const RADII = [5, 10, 20, 50, 100];
+const CLINIC_TYPES = clinicTypes as string[];
 
 export default async function DatabasePage({
   searchParams,
@@ -17,6 +19,7 @@ export default async function DatabasePage({
     email?: string;
     location?: string;
     radius?: string;
+    type?: string;
   };
 }) {
   const entity = searchParams.entity === "doctors" ? "doctors" : "clinics";
@@ -25,11 +28,12 @@ export default async function DatabasePage({
   const email = searchParams.email?.trim() || "";
   const location = searchParams.location?.trim() || "";
   const radiusKm = Number(searchParams.radius) || 10;
+  const type = searchParams.type?.trim() || "";
 
   // Only the stored counter is read on load — no scan of the big collection.
   const meta = await getClinicMeta();
 
-  const hasSearch = Boolean(name || phone || email || location);
+  const hasSearch = Boolean(name || phone || email || location || type);
   const outcome =
     entity === "clinics" && hasSearch
       ? await searchClinics({
@@ -38,6 +42,7 @@ export default async function DatabasePage({
           email,
           location: location || undefined,
           radiusKm: location ? radiusKm : undefined,
+          type: type || undefined,
         })
       : null;
 
@@ -97,6 +102,17 @@ export default async function DatabasePage({
                   {RADII.map((r) => (
                     <option key={r} value={r}>
                       Within {r} km
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Type</label>
+                <select name="type" defaultValue={type} className="input">
+                  <option value="">Any type</option>
+                  {CLINIC_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
                     </option>
                   ))}
                 </select>
@@ -166,6 +182,7 @@ export default async function DatabasePage({
                     <th className="px-4 py-3 font-medium">Suburb</th>
                     <th className="px-4 py-3 font-medium">Telephone</th>
                     <th className="px-4 py-3 font-medium">Email</th>
+                    <th className="px-4 py-3 font-medium">Type</th>
                     {outcome.mode === "radius" && (
                       <th className="px-4 py-3 font-medium">Distance</th>
                     )}
@@ -207,6 +224,22 @@ export default async function DatabasePage({
                         <div className="truncate" title={c.email}>
                           {c.email || "—"}
                         </div>
+                      </td>
+                      <td className="max-w-[16rem] px-4 py-3">
+                        {c.types && c.types.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {c.types.map((t) => (
+                              <span
+                                key={t}
+                                className="badge bg-slate-100 text-neutral-600"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-neutral-500">—</span>
+                        )}
                       </td>
                       {outcome.mode === "radius" && (
                         <td className="px-4 py-3 text-neutral-500">

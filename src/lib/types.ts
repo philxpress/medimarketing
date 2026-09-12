@@ -210,6 +210,12 @@ export interface Clinic {
   geohash: string | null;
   /** Which source crawls this clinic was found in. */
   sources: string[];
+  /**
+   * Clinic/practitioner types derived from healthdirect service types and
+   * aggregated HealthShare specialties (HotDoc contributes no type). Cleaned,
+   * de-duplicated and sorted; see scripts/build-clinics.py.
+   */
+  types: string[];
   /** True when present on HotDoc (patient-bookable → most current details). */
   bookable: boolean;
   billingType: string;

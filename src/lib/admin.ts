@@ -59,6 +59,7 @@ export interface ClinicSearch {
   email?: string;
   location?: string; // postcode or suburb
   radiusKm?: number;
+  type?: string; // one of the clinic-types.json facet values
 }
 
 export interface ClinicResult extends Clinic {
@@ -77,10 +78,21 @@ const RESULT_CAP = 200;
 // High private-use code point → upper bound for a "starts-with" prefix query.
 const PREFIX_END = String.fromCharCode(0xf8ff);
 
+function typeMatch(c: Clinic, type?: string): boolean {
+  if (!type?.trim()) return true;
+  const t = type.trim().toLowerCase();
+  return (c.types ?? []).some((v) => v.toLowerCase() === t);
+}
+
 function textMatch(c: Clinic, s: ClinicSearch): boolean {
   const has = (v: string, q?: string) =>
     !q || v.toLowerCase().includes(q.trim().toLowerCase());
-  return has(c.name, s.name) && has(c.phone, s.phone) && has(c.email, s.email);
+  return (
+    has(c.name, s.name) &&
+    has(c.phone, s.phone) &&
+    has(c.email, s.email) &&
+    typeMatch(c, s.type)
+  );
 }
 
 /**
@@ -134,7 +146,10 @@ export async function searchClinics(s: ClinicSearch): Promise<ClinicSearchOutcom
   }
 
   // ── Text mode ────────────────────────────────────────────────────────
-  // Pick the first provided field as the indexed prefix query; filter the rest.
+  // Pick the first provided text field as the indexed prefix query; filter the
+  // rest (including `type`) in memory. When `type` is the ONLY filter, run an
+  // indexed array-contains query on it as the primary instead — keeping the
+  // "one indexed query at a time" design with no composite index.
   const primary: { field: keyof Clinic; q: string } | null = s.name?.trim()
     ? { field: "name", q: s.name.trim() }
     : s.phone?.trim()
@@ -142,7 +157,20 @@ export async function searchClinics(s: ClinicSearch): Promise<ClinicSearchOutcom
       : s.email?.trim()
         ? { field: "email", q: s.email.trim() }
         : null;
-  if (!primary) return { clinics: [], mode: "text", truncated: false };
+
+  if (!primary) {
+    // Type-only search: array-contains on the stored `types` array.
+    if (s.type?.trim()) {
+      const snap = await col
+        .where("types", "array-contains", s.type.trim())
+        .limit(RESULT_CAP + 1)
+        .get();
+      const results = snap.docs.map((d) => d.data() as ClinicResult);
+      const truncated = results.length > RESULT_CAP;
+      return { clinics: results.slice(0, RESULT_CAP), mode: "text", truncated };
+    }
+    return { clinics: [], mode: "text", truncated: false };
+  }
 
   const snap = await col
     .orderBy(primary.field)
