@@ -25,7 +25,7 @@ export default async function JourneysPage() {
       {!org.postalAddress || connected.length === 0 ? (
         <div className="mb-6 rounded-xl border border-neutral-300 bg-neutral-100 p-4 text-sm text-neutral-900">
           Connect a mailbox and set your postal address in{" "}
-          <Link href="/settings" className="font-medium underline">
+          <Link href="/settings/company" className="font-medium underline">
             Settings
           </Link>{" "}
           before automations can send.

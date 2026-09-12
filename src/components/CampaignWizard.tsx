@@ -458,9 +458,6 @@ export function CampaignWizard({
               onChange={(e) => setName(e.target.value)}
               autoFocus
             />
-            <p className="mt-1 text-xs text-neutral-500">
-              Only you and your team see this — recipients never do.
-            </p>
           </div>
           <div>
             <label className="label">Send from</label>

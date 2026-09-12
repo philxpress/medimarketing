@@ -58,8 +58,8 @@ export default async function DashboardPage() {
               {!org.postalAddress && (
                 <li>
                   Add your postal address in{" "}
-                  <Link href="/settings" className="underline">
-                    Settings
+                  <Link href="/settings/company" className="underline">
+                    Settings → Company
                   </Link>{" "}
                   (required for compliance).
                 </li>
@@ -67,8 +67,8 @@ export default async function DashboardPage() {
               {connected.length === 0 && (
                 <li>
                   Connect a Gmail or Microsoft mailbox in{" "}
-                  <Link href="/settings" className="underline">
-                    Settings → Integrations
+                  <Link href="/settings/mailboxes" className="underline">
+                    Settings → Connected mailboxes
                   </Link>
                   .
                 </li>
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
             <div className="text-sm text-neutral-900">
               <Plug className="mb-2 text-neutral-400" size={28} />
               No mailbox connected.{" "}
-              <Link href="/settings" className="text-brand-600 hover:underline">
+              <Link href="/settings/mailboxes" className="text-brand-600 hover:underline">
                 Connect one
               </Link>
               .

@@ -63,7 +63,7 @@ export default async function NewCampaignPage() {
           {!org.postalAddress && <span>a postal address</span>}
           {!org.postalAddress && connected.length === 0 && " and "}
           {connected.length === 0 && <span>a connected mailbox</span>}. Add these in{" "}
-          <Link href="/settings" className="font-medium underline">
+          <Link href="/settings/company" className="font-medium underline">
             Settings
           </Link>
           . You can still save a draft.
