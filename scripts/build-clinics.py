@@ -328,29 +328,38 @@ with open(OUT, "w", encoding="utf-8", newline="\n") as out:
         out.write(json.dumps(c) + "\n")
 
 # ── postcode centroids + suburb→postcode, bundled into the app ────────────
-# Lets the admin search resolve a postcode/suburb to a map centre for radius
-# search without any Firestore reads. Small, non-sensitive (public centroids).
-pc_geo = defaultdict(lambda: [0.0, 0.0, 0])
-sub_counts = defaultdict(int)  # (suburb_norm, postcode) -> clinic count
-for c in kept:
-    if c["postcode"] and c["lat"] is not None and c["lng"] is not None:
-        acc = pc_geo[c["postcode"]]; acc[0] += c["lat"]; acc[1] += c["lng"]; acc[2] += 1
-    if c["suburb"] and c["postcode"]:
-        sub_counts[(norm(c["suburb"]), c["postcode"])] += 1
-by_postcode = {pc: [round(a[0] / a[2], 5), round(a[1] / a[2], 5)] for pc, a in pc_geo.items() if a[2]}
-by_suburb = {}
-for (sub, pc), n in sub_counts.items():
-    # A suburb name can map to several postcodes; keep the busiest, and only if
-    # that postcode has a centroid.
-    if pc not in by_postcode:
-        continue
-    if sub not in by_suburb or n > sub_counts[(sub, by_suburb[sub])]:
-        by_suburb[sub] = pc
+# Lets the admin search resolve a postcode/suburb to a centre for radius search
+# with no Firestore reads. Sourced from the authoritative AU postcode dataset
+# (au_postcodes.csv) — NOT averaged from clinic coordinates, which are polluted
+# (clinics mis-tagged to a postcode drag the centroid far off).
+AU_PC = os.path.join(DATA, "au_postcodes.csv")
 PC_OUT = os.path.join(ROOT, "src", "lib", "data", "postcodes.json")
-os.makedirs(os.path.dirname(PC_OUT), exist_ok=True)
-with open(PC_OUT, "w", encoding="utf-8", newline="\n") as f:
-    json.dump({"byPostcode": by_postcode, "bySuburb": by_suburb}, f, separators=(",", ":"))
-print(f"postcode lookup written: {len(by_postcode)} postcodes, {len(by_suburb)} suburbs -> {PC_OUT}")
+if os.path.exists(AU_PC):
+    agg = defaultdict(lambda: [0.0, 0.0, 0])  # postcode -> mean lat/lng of its localities
+    by_suburb = {}
+    with open(AU_PC, encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            pc = clean(r.get("postcode"))
+            try:
+                lat, lng = float(r.get("lat") or 0), float(r.get("long") or 0)
+            except ValueError:
+                continue
+            if not pc or not lat or not lng:
+                continue
+            if not (-44 < lat < -9 and 112 < lng < 154):  # within Australia
+                continue
+            a = agg[pc]; a[0] += lat; a[1] += lng; a[2] += 1
+            sub = norm(r.get("locality"))
+            if sub and sub not in by_suburb:
+                by_suburb[sub] = pc
+    by_postcode = {pc: [round(a[0] / a[2], 5), round(a[1] / a[2], 5)] for pc, a in agg.items() if a[2]}
+    by_suburb = {s: pc for s, pc in by_suburb.items() if pc in by_postcode}
+    os.makedirs(os.path.dirname(PC_OUT), exist_ok=True)
+    with open(PC_OUT, "w", encoding="utf-8", newline="\n") as f:
+        json.dump({"byPostcode": by_postcode, "bySuburb": by_suburb}, f, separators=(",", ":"))
+    print(f"postcode lookup written: {len(by_postcode)} postcodes, {len(by_suburb)} suburbs -> {PC_OUT}")
+else:
+    print(f"WARN: {AU_PC} not found — postcodes.json left unchanged.")
 
 # ── clinic-type facet list (top ~60 types by clinic count) ────────────────
 # The dropdown offers these exact strings, so they match stored `types` values.

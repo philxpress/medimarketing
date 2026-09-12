@@ -8,7 +8,7 @@
  * collection when the operator actually searches.
  */
 import "server-only";
-import { geohashQueryBounds, distanceBetween } from "geofire-common";
+import { distanceBetween } from "geofire-common";
 import { adminDb } from "@/lib/firebase/admin";
 import type { Clinic, Org } from "@/lib/types";
 import pcData from "@/lib/data/postcodes.json";
@@ -75,6 +75,8 @@ export interface ClinicSearchOutcome {
 }
 
 const RESULT_CAP = 200;
+// Safety ceiling on docs read per radius search (nearest postcodes first).
+const READ_CAP = 6000;
 // High private-use code point → upper bound for a "starts-with" prefix query.
 const PREFIX_END = String.fromCharCode(0xf8ff);
 
@@ -104,6 +106,10 @@ export async function searchClinics(s: ClinicSearch): Promise<ClinicSearchOutcom
   const col = adminDb.collection("clinics");
 
   // ── Radius mode ──────────────────────────────────────────────────────
+  // Distance is postcode-based: find every postcode whose centroid is within
+  // the radius, then fetch clinics tagged with those postcodes (nearest first)
+  // and filter by any text/type criteria in memory. This sidesteps polluted
+  // per-clinic coordinates and the geohash-limit truncation entirely.
   if (s.location && s.radiusKm) {
     const resolved = resolveCenter(s.location);
     if (!resolved) {
@@ -114,29 +120,33 @@ export async function searchClinics(s: ClinicSearch): Promise<ClinicSearchOutcom
         locationError: `Couldn't find "${s.location}". Try a 4-digit postcode.`,
       };
     }
-    const radiusM = s.radiusKm * 1000;
-    const bounds = geohashQueryBounds(resolved.center, radiusM);
-    const snaps = await Promise.all(
-      bounds.map((b) =>
-        col.orderBy("geohash").startAt(b[0]).endAt(b[1]).limit(400).get()
-      )
-    );
-    const seen = new Set<string>();
-    let results: ClinicResult[] = [];
-    for (const snap of snaps) {
+    const distByPc = new Map<string, number>();
+    for (const [pc, c] of Object.entries(POSTCODES.byPostcode)) {
+      const d = distanceBetween(c, resolved.center);
+      if (d <= s.radiusKm) distByPc.set(pc, d);
+    }
+    // Nearest postcodes first so the read cap keeps the closest results.
+    const pcs = [...distByPc.entries()].sort((a, b) => a[1] - b[1]).map((e) => e[0]);
+
+    const results: ClinicResult[] = [];
+    let read = 0;
+    let capped = false;
+    for (let i = 0; i < pcs.length; i += 30) {
+      if (read >= READ_CAP) {
+        capped = true;
+        break;
+      }
+      const chunk = pcs.slice(i, i + 30); // Firestore "in" allows up to 30
+      const snap = await col.where("postcode", "in", chunk).get();
+      read += snap.size;
       for (const doc of snap.docs) {
-        if (seen.has(doc.id)) continue;
-        seen.add(doc.id);
         const c = doc.data() as Clinic;
-        if (c.lat == null || c.lng == null) continue;
-        const distanceKm = distanceBetween([c.lat, c.lng], resolved.center);
-        if (distanceKm > s.radiusKm) continue;
         if (!textMatch(c, s)) continue;
-        results.push({ ...c, distanceKm });
+        results.push({ ...c, distanceKm: distByPc.get(c.postcode) });
       }
     }
     results.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
-    const truncated = results.length > RESULT_CAP;
+    const truncated = capped || results.length > RESULT_CAP;
     return {
       clinics: results.slice(0, RESULT_CAP),
       mode: "radius",
