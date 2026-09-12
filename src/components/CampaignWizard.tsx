@@ -445,7 +445,7 @@ export function CampaignWizard({
   const chosenList = lists.find((l) => l.id === listId);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="w-full">
       {/* Stepper */}
       <ol className="mb-6 flex flex-wrap items-center gap-y-2">
         {STEPS.map((s, i) => {
