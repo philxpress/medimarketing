@@ -20,6 +20,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  ListChecks,
+  Target,
+  MapPin,
 } from "lucide-react";
 import type { Attachment } from "@/lib/types";
 import { zonedTimeToEpoch, tzAbbrev } from "@/lib/tz";
@@ -55,7 +58,10 @@ interface Facets {
   tags: string[];
 }
 
+type CampaignType = "" | "list" | "prospect";
+
 const MERGE_FIELDS = ["firstName", "lastName", "practiceName", "specialty", "city"];
+const DISTANCES = [5, 10, 20, 50, 100];
 
 const SAMPLE = {
   firstName: "Aisha",
@@ -67,12 +73,13 @@ const SAMPLE = {
 };
 
 const STEPS = [
-  { n: 1, title: "Name & sender" },
-  { n: 2, title: "Recipient list" },
-  { n: 3, title: "Template" },
-  { n: 4, title: "Preview content" },
-  { n: 5, title: "Recipients" },
-  { n: 6, title: "Send" },
+  { n: 1, title: "Campaign type" },
+  { n: 2, title: "Name & sender" },
+  { n: 3, title: "Audience" },
+  { n: 4, title: "Template" },
+  { n: 5, title: "Preview content" },
+  { n: 6, title: "Recipients" },
+  { n: 7, title: "Send" },
 ] as const;
 
 export function CampaignWizard({
@@ -97,30 +104,36 @@ export function CampaignWizard({
   const [step, setStep] = useState(1);
 
   // Step 1
+  const [campaignType, setCampaignType] = useState<CampaignType>("");
+
+  // Step 2
   const [name, setName] = useState("");
   const [fromIdx, setFromIdx] = useState(0);
 
-  // Step 2
+  // Step 3 — My List
   const [listId, setListId] = useState(lists[0]?.id ?? "");
   const [segment, setSegment] = useState<{ specialty: string; city: string; tag: string }>({
     specialty: "",
     city: "",
     tag: "",
   });
+  // Step 3 — Find Prospects
+  const [profession, setProfession] = useState("");
+  const [postcode, setPostcode] = useState("");
+  const [distanceKm, setDistanceKm] = useState(20);
 
-  // Step 3
+  // Step 4
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState(
     "<p>Hi {{firstName}},</p>\n<p>Write your message to {{practiceName}} here…</p>"
   );
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-  // Step 5 — individual recipient selection (we track exclusions, so new
-  // matches default to included).
+  // Step 6 — individual recipient selection (track exclusions).
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
-  // Step 6
+  // Step 7
   const [scheduleMode, setScheduleMode] = useState(false);
   const [scheduleAt, setScheduleAt] = useState("");
 
@@ -138,21 +151,30 @@ export function CampaignWizard({
     [contacts]
   );
 
-  // Contacts belonging to the chosen list, that are still subscribed and match
-  // the optional segment filter. This is the pool shown in step 5.
+  // The audience pool shown in the recipients step, resolved from the chosen
+  // campaign type.
   const baseRecipients = useMemo(() => {
-    const list = lists.find((l) => l.id === listId);
-    if (!list) return [] as WizardContact[];
-    return list.contactIds
-      .map((id) => contactsById.get(id))
-      .filter((c): c is WizardContact => Boolean(c && c.subscribed))
-      .filter((c) => {
-        if (segment.specialty && c.specialty !== segment.specialty) return false;
-        if (segment.city && c.city !== segment.city) return false;
-        if (segment.tag && !c.tags.includes(segment.tag)) return false;
-        return true;
-      });
-  }, [lists, listId, contactsById, segment]);
+    if (campaignType === "prospect") {
+      if (!profession) return [] as WizardContact[];
+      // Prospects are matched by profession from the available contact database.
+      // Radius-around-postcode filtering activates once location data exists.
+      return contacts.filter((c) => c.subscribed && c.specialty === profession);
+    }
+    if (campaignType === "list") {
+      const list = lists.find((l) => l.id === listId);
+      if (!list) return [] as WizardContact[];
+      return list.contactIds
+        .map((id) => contactsById.get(id))
+        .filter((c): c is WizardContact => Boolean(c && c.subscribed))
+        .filter((c) => {
+          if (segment.specialty && c.specialty !== segment.specialty) return false;
+          if (segment.city && c.city !== segment.city) return false;
+          if (segment.tag && !c.tags.includes(segment.tag)) return false;
+          return true;
+        });
+    }
+    return [] as WizardContact[];
+  }, [campaignType, profession, contacts, lists, listId, contactsById, segment]);
 
   const selectedIds = useMemo(
     () => baseRecipients.filter((c) => !excluded.has(c.id)).map((c) => c.id),
@@ -183,6 +205,11 @@ export function CampaignWizard({
   }
   const selectAll = () => setExcluded(new Set());
   const selectNone = () => setExcluded(new Set(baseRecipients.map((c) => c.id)));
+
+  function chooseType(t: CampaignType) {
+    setCampaignType(t);
+    setExcluded(new Set()); // reset any prior selection when switching source
+  }
 
   function applyTemplate(id: string) {
     const t = templates.find((x) => x.id === id);
@@ -317,6 +344,24 @@ export function CampaignWizard({
     }
   }
 
+  const cleanSegment = () => {
+    if (campaignType !== "list") return undefined;
+    const s: { specialty?: string; city?: string; tag?: string } = {};
+    if (segment.specialty) s.specialty = segment.specialty;
+    if (segment.city) s.city = segment.city;
+    if (segment.tag) s.tag = segment.tag;
+    return Object.keys(s).length ? s : undefined;
+  };
+
+  const cleanProspecting = () => {
+    if (campaignType !== "prospect") return undefined;
+    const p: { profession?: string; postcode?: string; distanceKm?: number } = {};
+    if (profession) p.profession = profession;
+    if (postcode.trim()) p.postcode = postcode.trim();
+    if (distanceKm) p.distanceKm = distanceKm;
+    return Object.keys(p).length ? p : undefined;
+  };
+
   async function save(mode: "draft" | "send" | "schedule") {
     if (mode === "schedule" && !scheduleAt) {
       setMsg("Pick a date and time to schedule.");
@@ -340,9 +385,10 @@ export function CampaignWizard({
           body,
           fromProvider: mb?.provider,
           fromEmail: mb?.email,
-          listId,
+          listId: campaignType === "list" ? listId : undefined,
           attachments,
           segment: cleanSegment(),
+          prospecting: cleanProspecting(),
           recipientIds: selectedIds,
           scheduledAt,
         }),
@@ -362,38 +408,36 @@ export function CampaignWizard({
     }
   }
 
-  const cleanSegment = () => {
-    const s: { specialty?: string; city?: string; tag?: string } = {};
-    if (segment.specialty) s.specialty = segment.specialty;
-    if (segment.city) s.city = segment.city;
-    if (segment.tag) s.tag = segment.tag;
-    return Object.keys(s).length ? s : undefined;
-  };
-
   // Per-step gating for the Next button.
   const canProceed = (() => {
     switch (step) {
       case 1:
-        return Boolean(name.trim()) && mailboxes.length > 0;
+        return campaignType !== "";
       case 2:
-        return Boolean(listId) && baseRecipients.length > 0;
+        return Boolean(name.trim()) && mailboxes.length > 0;
       case 3:
-        return Boolean(subject.trim()) && Boolean(body.trim());
+        return campaignType === "prospect"
+          ? Boolean(profession) && baseRecipients.length > 0
+          : Boolean(listId) && baseRecipients.length > 0;
       case 4:
-        return true;
+        return Boolean(subject.trim()) && Boolean(body.trim());
       case 5:
+        return true;
+      case 6:
         return selectedCount > 0;
       default:
         return true;
     }
   })();
 
+  const audienceReady =
+    campaignType === "prospect" ? Boolean(profession) : Boolean(listId);
   const canSend =
     mailboxes.length > 0 &&
     subject.trim() &&
     body.trim() &&
-    listId &&
     name.trim() &&
+    audienceReady &&
     selectedCount > 0;
 
   const preview = renderPreview(body, SAMPLE);
@@ -405,8 +449,7 @@ export function CampaignWizard({
       {/* Stepper */}
       <ol className="mb-6 flex flex-wrap items-center gap-y-2">
         {STEPS.map((s, i) => {
-          const state =
-            s.n === step ? "current" : s.n < step ? "done" : "todo";
+          const state = s.n === step ? "current" : s.n < step ? "done" : "todo";
           return (
             <li key={s.n} className="flex items-center">
               <button
@@ -439,15 +482,35 @@ export function CampaignWizard({
                 </span>
               </button>
               {i < STEPS.length - 1 && (
-                <span className="mx-2 h-px w-4 bg-slate-200 sm:w-8" />
+                <span className="mx-2 h-px w-4 bg-slate-200 sm:w-6" />
               )}
             </li>
           );
         })}
       </ol>
 
-      {/* ── Step 1 — name & sender ─────────────────────────────── */}
+      {/* ── Step 1 — campaign type ─────────────────────────────── */}
       {step === 1 && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TypeCard
+            active={campaignType === "list"}
+            onClick={() => chooseType("list")}
+            icon={<ListChecks size={22} />}
+            title="My List"
+            desc="Send to contacts you've uploaded or added — your own lists, narrowed by segment."
+          />
+          <TypeCard
+            active={campaignType === "prospect"}
+            onClick={() => chooseType("prospect")}
+            icon={<Target size={22} />}
+            title="Find Prospects"
+            desc="Describe who to reach — a profession within a distance of a postcode — and pull matching contacts from the database."
+          />
+        </div>
+      )}
+
+      {/* ── Step 2 — name & sender ─────────────────────────────── */}
+      {step === 2 && (
         <div className="card space-y-4">
           <div>
             <label className="label">Campaign name (internal)</label>
@@ -486,8 +549,8 @@ export function CampaignWizard({
         </div>
       )}
 
-      {/* ── Step 2 — recipient list ────────────────────────────── */}
-      {step === 2 && (
+      {/* ── Step 3 — audience ──────────────────────────────────── */}
+      {step === 3 && campaignType === "list" && (
         <div className="card space-y-4">
           <div>
             <label className="label">Recipient list</label>
@@ -559,10 +622,9 @@ export function CampaignWizard({
             {chosenList ? (
               <>
                 <span className="font-semibold">{baseRecipients.length}</span> subscribed
-                contact{baseRecipients.length === 1 ? "" : "s"} match
-                {baseRecipients.length === 1 ? "es" : ""} in{" "}
-                <span className="font-medium">{chosenList.name}</span>. You&apos;ll fine-tune
-                exactly who gets this in step 5.
+                contact{baseRecipients.length === 1 ? "" : "s"} match in{" "}
+                <span className="font-medium">{chosenList.name}</span>. Fine-tune exactly who
+                gets this in step 6.
               </>
             ) : (
               "Choose a list to see how many contacts it holds."
@@ -571,8 +633,80 @@ export function CampaignWizard({
         </div>
       )}
 
-      {/* ── Step 3 — template & content ────────────────────────── */}
-      {step === 3 && (
+      {step === 3 && campaignType === "prospect" && (
+        <div className="card space-y-4">
+          <div>
+            <label className="label">
+              <Target size={13} className="mr-1 inline" />
+              Profession
+            </label>
+            <select
+              className="input"
+              value={profession}
+              onChange={(e) => setProfession(e.target.value)}
+            >
+              <option value="">Choose a profession…</option>
+              {facets.specialties.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label">
+                <MapPin size={13} className="mr-1 inline" />
+                Postcode
+              </label>
+              <input
+                className="input"
+                inputMode="numeric"
+                placeholder="e.g. 3000"
+                value={postcode}
+                onChange={(e) => setPostcode(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Distance</label>
+              <select
+                className="input"
+                value={distanceKm}
+                onChange={(e) => setDistanceKm(Number(e.target.value))}
+              >
+                {DISTANCES.map((d) => (
+                  <option key={d} value={d}>
+                    Within {d} km
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-neutral-900">
+            <Users size={14} className="mr-1 inline" />
+            {profession ? (
+              <>
+                <span className="font-semibold">{baseRecipients.length}</span> matching{" "}
+                <span className="font-medium">{profession}</span> contact
+                {baseRecipients.length === 1 ? "" : "s"} found.
+              </>
+            ) : (
+              "Choose a profession to find matching prospects."
+            )}
+          </div>
+
+          <p className="text-xs text-neutral-500">
+            Prospects are matched by profession from the contact database. Postcode-radius
+            filtering ({postcode ? `within ${distanceKm} km of ${postcode}` : "postcode + distance"})
+            is captured now and applied once a location-aware prospect database is connected.
+          </p>
+        </div>
+      )}
+
+      {/* ── Step 4 — template & content ────────────────────────── */}
+      {step === 4 && (
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-4">
             <div className="card space-y-4">
@@ -749,8 +883,8 @@ export function CampaignWizard({
         </div>
       )}
 
-      {/* ── Step 4 — preview content ───────────────────────────── */}
-      {step === 4 && (
+      {/* ── Step 5 — preview content ───────────────────────────── */}
+      {step === 5 && (
         <div className="card">
           <div className="mb-2 flex items-center justify-between">
             <div className="text-xs uppercase text-neutral-500">
@@ -791,8 +925,8 @@ export function CampaignWizard({
         </div>
       )}
 
-      {/* ── Step 5 — recipient selection ───────────────────────── */}
-      {step === 5 && (
+      {/* ── Step 6 — recipient selection ───────────────────────── */}
+      {step === 6 && (
         <div className="card p-0">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3">
             <div className="text-sm text-neutral-900">
@@ -834,7 +968,7 @@ export function CampaignWizard({
             {filteredRecipients.length === 0 ? (
               <p className="px-5 py-6 text-sm text-neutral-500">
                 {baseRecipients.length === 0
-                  ? "No subscribed contacts match this list and segment."
+                  ? "No subscribed contacts match this audience."
                   : "No contacts match your search."}
               </p>
             ) : (
@@ -875,22 +1009,39 @@ export function CampaignWizard({
         </div>
       )}
 
-      {/* ── Step 6 — review & send ─────────────────────────────── */}
-      {step === 6 && (
+      {/* ── Step 7 — review & send ─────────────────────────────── */}
+      {step === 7 && (
         <div className="space-y-4">
           <div className="card">
             <h2 className="mb-3 font-semibold text-neutral-900">Review</h2>
             <dl className="space-y-2 text-sm">
+              <Row k="Type" v={campaignType === "prospect" ? "Find Prospects" : "My List"} />
               <Row k="Campaign" v={name || "—"} />
               <Row k="From" v={mb ? `${mb.email} (${mb.provider})` : "—"} />
-              <Row k="List" v={chosenList?.name ?? "—"} />
-              {cleanSegment() && (
+              {campaignType === "prospect" ? (
                 <Row
-                  k="Segment"
-                  v={[segment.specialty, segment.city, segment.tag]
-                    .filter(Boolean)
-                    .join(" · ")}
+                  k="Audience"
+                  v={
+                    [
+                      profession,
+                      postcode ? `within ${distanceKm} km of ${postcode}` : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "—"
+                  }
                 />
+              ) : (
+                <>
+                  <Row k="List" v={chosenList?.name ?? "—"} />
+                  {cleanSegment() && (
+                    <Row
+                      k="Segment"
+                      v={[segment.specialty, segment.city, segment.tag]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    />
+                  )}
+                </>
               )}
               <Row k="Recipients" v={`${selectedCount} selected`} />
               <Row k="Subject" v={subject || "—"} />
@@ -968,7 +1119,7 @@ export function CampaignWizard({
             type="button"
             className="btn-secondary"
             onClick={() => save("draft")}
-            disabled={busy || !name.trim()}
+            disabled={busy || !name.trim() || campaignType === ""}
           >
             <Save size={16} /> Save draft
           </button>
@@ -985,6 +1136,45 @@ export function CampaignWizard({
         </div>
       </div>
     </div>
+  );
+}
+
+function TypeCard({
+  active,
+  onClick,
+  icon,
+  title,
+  desc,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`card flex h-full flex-col items-start gap-2 text-left transition ${
+        active
+          ? "ring-2 ring-brand-500"
+          : "hover:border-brand-200 hover:shadow-md"
+      }`}
+    >
+      <span
+        className={`flex h-11 w-11 items-center justify-center rounded-lg ${
+          active ? "bg-brand-600 text-white" : "bg-slate-100 text-neutral-900"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="flex items-center gap-2 text-base font-semibold text-neutral-900">
+        {title}
+        {active && <Check size={16} className="text-brand-600" />}
+      </span>
+      <span className="text-sm text-neutral-500">{desc}</span>
+    </button>
   );
 }
 

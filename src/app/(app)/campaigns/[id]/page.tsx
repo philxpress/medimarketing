@@ -146,6 +146,25 @@ export default async function CampaignDetailPage({
             <h2 className="mb-4 font-semibold text-neutral-900">Details</h2>
             <dl className="space-y-2 text-sm">
               <Row k="From" v={`${campaign.fromEmail || "—"} (${campaign.fromProvider})`} />
+              <Row
+                k="Type"
+                v={campaign.prospecting ? "Find Prospects" : "My List"}
+              />
+              {campaign.prospecting && (
+                <Row
+                  k="Audience"
+                  v={
+                    [
+                      campaign.prospecting.profession,
+                      campaign.prospecting.postcode
+                        ? `within ${campaign.prospecting.distanceKm ?? "?"} km of ${campaign.prospecting.postcode}`
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "—"
+                  }
+                />
+              )}
               <Row k="Recipients" v={String(campaign.stats.total)} />
               {campaign.segment && (
                 <Row

@@ -29,6 +29,14 @@ const schema = z.object({
       tag: z.string().optional(),
     })
     .optional(),
+  /** "Find Prospects" targeting (profession + radius around a postcode). */
+  prospecting: z
+    .object({
+      profession: z.string().max(120).optional(),
+      postcode: z.string().max(12).optional(),
+      distanceKm: z.number().int().positive().max(1000).optional(),
+    })
+    .optional(),
   /** Final set of contact IDs to send to (from the wizard's recipient step). */
   recipientIds: z.array(z.string().min(1)).max(50000).optional(),
   /** Epoch ms; when set (and in the future), the campaign is scheduled. */
@@ -69,6 +77,9 @@ export async function POST(req: NextRequest) {
         : {}),
       ...(body.recipientIds && body.recipientIds.length > 0
         ? { recipientIds: body.recipientIds }
+        : {}),
+      ...(body.prospecting && Object.values(body.prospecting).some(Boolean)
+        ? { prospecting: body.prospecting }
         : {}),
       stats: { total, sent: 0, failed: 0, skipped: 0, opened: 0, clicked: 0 },
       status: isScheduled ? "scheduled" : "draft",

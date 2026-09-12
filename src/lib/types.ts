@@ -128,6 +128,13 @@ export interface Campaign {
   /** Optional filter applied to the list at send time (segmentation). */
   segment?: CampaignSegment;
   /**
+   * "Find Prospects" (type-2) targeting: instead of the org's own list, the
+   * audience is described by profession + a radius around a postcode and pulled
+   * from the prospect database. Persisted for the record even though radius
+   * matching activates only once a location-aware database is connected.
+   */
+  prospecting?: ProspectTarget;
+  /**
    * Explicit set of contact IDs to send to, chosen in the wizard's recipient
    * step. When present it is the final send list (list + segment already
    * applied, individual recipients ticked off). When absent, the send falls
@@ -175,6 +182,13 @@ export interface CampaignSegment {
   specialty?: string;
   city?: string;
   tag?: string;
+}
+
+/** "Find Prospects" targeting — profession + radius around a postcode. */
+export interface ProspectTarget {
+  profession?: string;
+  postcode?: string;
+  distanceKm?: number;
 }
 
 // ── Automations / journeys ────────────────────────────────────────────
