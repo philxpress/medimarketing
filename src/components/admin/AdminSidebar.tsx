@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShieldCheck, LayoutDashboard, Building2, Stethoscope, ArrowLeft } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Building2, Database, ArrowLeft } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/companies", label: "Companies", icon: Building2 },
-  { href: "/admin/clinics", label: "Clinic database", icon: Stethoscope },
+  { href: "/admin/clinics", label: "Database", icon: Database },
 ];
 
 export function AdminSidebar({ email }: { email: string }) {

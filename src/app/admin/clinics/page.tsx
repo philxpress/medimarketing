@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, Stethoscope, CheckCircle2 } from "lucide-react";
+import { Search, Database, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { queryClinics } from "@/lib/admin";
 
@@ -30,7 +30,7 @@ export default async function AdminClinicsPage({
 
   return (
     <>
-      <PageHeader title="Clinic database" />
+      <PageHeader title="Database" />
 
       <form className="card mb-6 flex flex-wrap items-end gap-3" method="get">
         <div>
@@ -66,7 +66,7 @@ export default async function AdminClinicsPage({
 
       {clinics.length === 0 ? (
         <div className="card py-14 text-center">
-          <Stethoscope className="mx-auto mb-3 text-neutral-400" size={36} />
+          <Database className="mx-auto mb-3 text-neutral-400" size={36} />
           <p className="font-medium text-neutral-900">No clinics match</p>
           <p className="text-sm text-neutral-500">Adjust the state or search and try again.</p>
         </div>
@@ -75,9 +75,11 @@ export default async function AdminClinicsPage({
           <table className="w-full text-left text-sm">
             <thead className="text-xs uppercase text-neutral-500">
               <tr className="border-b border-slate-100">
-                <th className="px-6 py-3 font-medium">Clinic</th>
+                <th className="px-6 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Address</th>
                 <th className="px-4 py-3 font-medium">Suburb</th>
-                <th className="px-4 py-3 font-medium">Contact</th>
+                <th className="px-4 py-3 font-medium">Telephone</th>
+                <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Source</th>
               </tr>
             </thead>
@@ -95,15 +97,25 @@ export default async function AdminClinicsPage({
                         />
                       )}
                     </div>
-                    <div className="max-w-md truncate text-xs text-neutral-500">{c.address}</div>
+                  </td>
+                  <td className="max-w-xs px-4 py-3 text-neutral-500">
+                    <div className="truncate" title={c.address}>
+                      {c.address || "—"}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-neutral-500">
-                    {c.suburb} {c.state} {c.postcode}
+                    {c.suburb || "—"}
+                    {(c.state || c.postcode) && (
+                      <div className="text-xs text-neutral-400">
+                        {c.state} {c.postcode}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-neutral-500">
-                    {c.phone && <div>{c.phone}</div>}
-                    {c.email && <div className="truncate">{c.email}</div>}
-                    {c.fax && <div>fax {c.fax}</div>}
+                  <td className="px-4 py-3 text-neutral-500">{c.phone || "—"}</td>
+                  <td className="max-w-[14rem] px-4 py-3 text-neutral-500">
+                    <div className="truncate" title={c.email}>
+                      {c.email || "—"}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
