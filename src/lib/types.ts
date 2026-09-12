@@ -184,6 +184,34 @@ export interface CampaignSegment {
   tag?: string;
 }
 
+/**
+ * A clinic in the shared prospect database (top-level `clinics` collection,
+ * server-only). Built from HotDoc + healthdirect + HealthShare with HotDoc
+ * details taking precedence; see scripts/build-clinics.py. Distance is derived
+ * from `geohash` (postcode-centroid based).
+ */
+export interface Clinic {
+  id: string;
+  name: string;
+  address: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  phone: string;
+  fax: string;
+  email: string;
+  website: string;
+  lat: number | null;
+  lng: number | null;
+  geohash: string | null;
+  /** Which source crawls this clinic was found in. */
+  sources: string[];
+  /** True when present on HotDoc (patient-bookable → most current details). */
+  bookable: boolean;
+  billingType: string;
+  doctorCount: number | null;
+}
+
 /** "Find Prospects" targeting — profession + radius around a postcode. */
 export interface ProspectTarget {
   profession?: string;

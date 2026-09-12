@@ -33,5 +33,12 @@ service cloud.firestore {
         allow write: if false; // all writes via Admin SDK on the server
       }
     }
+
+    // Shared prospect database (clinics; practitioners/affiliations later).
+    // Never exposed to the browser — reads happen server-side via the Admin
+    // SDK, which bypasses these rules.
+    match /clinics/{id} {
+      allow read, write: if false;
+    }
   }
 }
