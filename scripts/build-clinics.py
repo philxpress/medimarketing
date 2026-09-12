@@ -80,10 +80,46 @@ _GP_VARIANTS = {
     "gp",
 }
 
+# healthdirect labels professions as services ("Physiotherapy"); HotDoc and
+# HealthShare use the practitioner noun ("Physiotherapist"). Fold the service
+# form onto the practitioner form so the type dropdown has no near-duplicates.
+_TYPE_CANON = {
+    "physiotherapy": "Physiotherapist",
+    "psychology": "Psychologist",
+    "clinical psychology": "Clinical Psychologist",
+    "podiatry": "Podiatrist",
+    "optometry": "Optometrist",
+    "dietetics": "Dietitian",
+    "osteopathy": "Osteopath",
+    "acupuncture": "Acupuncturist",
+    "chiropractic": "Chiropractor",
+    "exercise physiology": "Exercise Physiologist",
+    "speech pathology": "Speech Pathologist",
+    "occupational therapy": "Occupational Therapist",
+    "massage therapy": "Massage Therapist",
+    "dermatology": "Dermatologist",
+    "cardiology": "Cardiologist",
+    "psychiatry": "Psychiatrist",
+    "ophthalmology": "Ophthalmologist",
+    "audiology": "Audiologist",
+    "nutrition": "Nutritionist",
+    "urology": "Urologist",
+    "endocrinology": "Endocrinologist",
+    "gastroenterology": "Gastroenterologist",
+    "neurology": "Neurologist",
+    "rheumatology": "Rheumatologist",
+    "general surgery": "General Surgeon",
+    "orthopaedic service": "Orthopaedic Surgeon",
+    "social workers": "Social Worker",
+    "social work": "Social Worker",
+}
+
 def canon_type(t: str) -> str:
     tl = t.strip().lower()
     if tl in _GP_VARIANTS:
         return _GP_CANON
+    if tl in _TYPE_CANON:
+        return _TYPE_CANON[tl]
     return t.strip()
 
 def split_types(raw: str, seps: str) -> list:
@@ -128,8 +164,11 @@ def geohash(lat, lng, precision=7):
     return "".join(gh)
 
 # ── 1. HotDoc raw clinics, keyed by booking url ───────────────────────────
+# Prefer the re-crawl (clinics_v2.csv), which carries service_types; fall back
+# to the original crawl if the v2 file isn't present.
 hotdoc = {}
-hd_path = os.path.join(DATA, "hotdoc", "clinics.csv")
+hd_v2 = os.path.join(DATA, "hotdoc", "clinics_v2.csv")
+hd_path = hd_v2 if os.path.exists(hd_v2) else os.path.join(DATA, "hotdoc", "clinics.csv")
 with open(hd_path, encoding="utf-8-sig") as fh:
     for r in csv.DictReader(fh):
         url = clean(r.get("url"))
@@ -148,8 +187,10 @@ with open(hd_path, encoding="utf-8-sig") as fh:
             "billingType": clean(r.get("billing_type")),
             "wheelchair": clean(r.get("wheelchair_access")),
             "doctorCount": clean(r.get("doctor_count")),
+            # service_types is ";"-joined in the v2 crawl; empty on the old one.
+            "types": split_types(r.get("service_types"), ";"),
         }
-print(f"HotDoc clinics loaded: {len(hotdoc)}")
+print(f"HotDoc clinics loaded: {len(hotdoc)} (from {os.path.basename(hd_path)})")
 
 # ── 2. healthdirect raw services, keyed by service_id (uuid) ──────────────
 def uuid_of(url: str) -> str:
@@ -216,6 +257,10 @@ for fn in sorted(glob.glob(os.path.join(FINAL, "*.csv"))):
                 continue
             hd = hotdoc.get(clean(row.get("hotdoc_url")))
             dr = healthdirect.get(uuid_of(row.get("healthdirect_url")))
+            # HotDoc service_types (from the re-crawl) — the third type source.
+            if hd:
+                for t in hd.get("types", []):
+                    bucket.setdefault(t.lower(), t)
             def pref(*vals):
                 for v in vals:
                     if v:
