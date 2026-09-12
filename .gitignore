@@ -30,6 +30,10 @@ firestore-debug.log
 .vercel
 *.tsbuildinfo
 
+# Practitioner database source data (2.9 GB of raw crawls/CSVs) — a data
+# source, never bundled into the app or committed to the repo.
+/Practitioner List/
+
 # editors
 .idea/
 .vscode/*
