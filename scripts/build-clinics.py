@@ -312,6 +312,25 @@ print(f"distinct clinics before filter: {len(clinics)}")
 for key, c in clinics.items():
     c["types"] = sorted(types_by_key[key].values(), key=str.lower)
 
+# ── 4c. apply recovered names (verified via search) to blank-name clinics ──
+# name_overrides.csv (clinic_id,name,source) accumulates names recovered during
+# verification. Only fills a name that is otherwise blank — never overwrites a
+# real source name. Keeps recovered names durable across rebuilds.
+NAME_OVERRIDES = os.path.join(ROOT, "scripts", "data", "name_overrides.csv")
+overrides = {}
+if os.path.exists(NAME_OVERRIDES):
+    with open(NAME_OVERRIDES, encoding="utf-8-sig") as fh:
+        for r in csv.DictReader(fh):
+            cid, nm = clean(r.get("clinic_id")), clean(r.get("name"))
+            if cid and nm:
+                overrides[cid] = nm
+    applied = 0
+    for c in clinics.values():
+        if not c["name"] and c["id"] in overrides:
+            c["name"] = overrides[c["id"]]
+            applied += 1
+    print(f"name overrides applied: {applied} of {len(overrides)}")
+
 # ── 5. filter: must have at least one contact method ──────────────────────
 kept, dropped_nocontact = [], 0
 for c in clinics.values():
