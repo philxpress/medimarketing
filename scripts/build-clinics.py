@@ -36,6 +36,30 @@ OUT = os.path.join(DATA, "clinics.ndjson")
 def norm(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
+def nkey(s: str) -> str:
+    """Punctuation-insensitive key for comparing a name against an address."""
+    return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
+
+_NAME_PLACEHOLDERS = {"", "no clinic listed", "none", "na", "n a", "unknown"}
+
+def valid_name(name: str, address: str) -> str:
+    """A real clinic name, or "" — never the address or a phone number.
+
+    The source falls back to the street address (and occasionally a bare phone
+    number) when it has no practice name; those are not names, so blank them.
+    """
+    n = (name or "").strip()
+    if not n:
+        return ""
+    k = nkey(n)
+    if k in _NAME_PLACEHOLDERS:
+        return ""
+    if not re.search(r"[A-Za-z]", n):          # digits/punctuation only → phone or number
+        return ""
+    if k == nkey(address):                      # address standing in as the name
+        return ""
+    return n
+
 def clean(s: str) -> str:
     return (s or "").strip()
 
@@ -105,6 +129,7 @@ with open(hdir_path, encoding="utf-8-sig") as fh:
             continue
         line1, line2 = clean(r.get("address_line1")), clean(r.get("address_line2"))
         healthdirect[sid] = {
+            "org": clean(r.get("organisation_name")),
             "address": ", ".join(a for a in (line1, line2) if a),
             "suburb": clean(r.get("suburb")),
             "state": clean(r.get("state")),
@@ -149,9 +174,16 @@ for fn in sorted(glob.glob(os.path.join(FINAL, "*.csv"))):
                     if v:
                         return v
                 return ""
-            name = pref(hd and hd["name"], clean(row.get("clinic_name")))
             address = pref(hd and hd["address"], clean(row.get("clinic_address")),
                            dr and dr["address"])
+            # Name must be a real name — never the address or a phone number.
+            # Try each source's name in precedence; keep the first valid one.
+            name = ""
+            for cand in (hd and hd["name"], dr and dr["org"], clean(row.get("clinic_name"))):
+                v = valid_name(cand or "", address)
+                if v:
+                    name = v
+                    break
             suburb = pref(hd and hd["suburb"], clean(row.get("suburb")), dr and dr["suburb"])
             phone = pref(hd and hd["phone"], clean(row.get("clinic_phone")), dr and dr["phone"])
             email = pref(clean(row.get("clinic_email")), dr and dr["email"])
@@ -203,6 +235,7 @@ with open(OUT, "w", encoding="utf-8", newline="\n") as out:
 def cnt(f): return sum(1 for c in kept if c[f])
 print(f"dropped (no contact method): {dropped_nocontact}")
 print(f"clinics written: {len(kept)}  ->  {OUT}")
+print("  with name:     %d  (blank: %d)" % (cnt("name"), len(kept) - cnt("name")))
 print("  with address:  %d" % cnt("address"))
 print("  with phone:    %d" % cnt("phone"))
 print("  with email:    %d" % cnt("email"))

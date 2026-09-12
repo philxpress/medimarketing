@@ -86,7 +86,7 @@ export default async function AdminClinicsPage({
                 <tr key={c.id} className="align-top hover:bg-slate-50">
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-1.5 font-medium text-neutral-900">
-                      {c.name}
+                      {c.name || <span className="italic text-neutral-400">Unnamed clinic</span>}
                       {c.bookable && (
                         <CheckCircle2
                           size={13}
