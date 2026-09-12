@@ -15,7 +15,7 @@ Built with **Next.js (App Router) + Firebase**, deployable to **Vercel**.
 | **Auth** — email/password, Google & Microsoft sign-in | ✅ |
 | **MFA** — TOTP (authenticator app) enrollment + challenge | ✅ |
 | **Multi-tenant orgs** — each user gets an isolated workspace | ✅ |
-| **Contacts & lists** — CSV upload (dedupe/upsert) + provided sample list | ✅ |
+| **Contacts & lists** — CSV upload (dedupe/upsert) | ✅ |
 | **Mail merge** — `{{firstName}}`, `{{practiceName}}`, custom CSV columns | ✅ |
 | **AI content** — subject/body copy (Claude) + images (OpenAI) | ✅ |
 | **Sending** — via connected Gmail (Gmail API) or M365 (Graph) mailbox | ✅ |

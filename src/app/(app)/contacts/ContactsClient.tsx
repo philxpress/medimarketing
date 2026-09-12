@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Database, ListChecks, Search, UserPlus, X, Trash2, Download } from "lucide-react";
+import { Upload, ListChecks, Search, UserPlus, X, Trash2, Download } from "lucide-react";
 import type { Contact } from "@/lib/types";
 
 interface ListSummary {
@@ -62,34 +62,15 @@ export function ContactsClient({
     }
   }
 
-  async function loadSample() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch("/api/contacts/sample", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setMsg(`Loaded ${data.imported} sample contacts.`);
-      router.refresh();
-    } catch (err) {
-      setMsg(`Failed: ${err}`);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="card">
           <div className="mb-3 flex items-center gap-2">
             <Upload size={18} className="text-neutral-900" />
             <h2 className="font-semibold text-neutral-900">Upload a CSV</h2>
           </div>
-          <p className="mb-2 text-sm text-neutral-500">
-            Columns: <code className="text-xs">email, firstName, lastName, practiceName,
-            specialty, city</code>. Extra columns become custom merge fields.
-          </p>
           <a
             href="/contacts-template.csv"
             download="medireach-contacts-template.csv"
@@ -120,24 +101,8 @@ export function ContactsClient({
             <UserPlus size={18} className="text-neutral-900" />
             <h2 className="font-semibold text-neutral-900">Add a contact</h2>
           </div>
-          <p className="mb-3 text-sm text-neutral-500">
-            Add a single clinic or professional by hand, with tags for segmentation.
-          </p>
           <button className="btn-secondary w-full" onClick={() => setEdit("new")}>
             New contact
-          </button>
-        </div>
-
-        <div className="card">
-          <div className="mb-3 flex items-center gap-2">
-            <Database size={18} className="text-neutral-900" />
-            <h2 className="font-semibold text-neutral-900">Use the provided list</h2>
-          </div>
-          <p className="mb-3 text-sm text-neutral-500">
-            Load a demo list of 12 fictional medical practices to try things out.
-          </p>
-          <button className="btn-secondary w-full" disabled={busy} onClick={loadSample}>
-            Load sample list
           </button>
         </div>
       </div>
