@@ -25,6 +25,10 @@ export interface Org {
   replyToEmail?: string;
   /** IANA timezone for scheduling & display (e.g. "Australia/Sydney"). */
   timezone?: string;
+  /** Subscription plan label, set by a platform admin (no enforcement yet). */
+  plan?: string;
+  /** Email of the company's admin/owner, denormalized for the admin console. */
+  ownerEmail?: string;
 }
 
 export interface Member {

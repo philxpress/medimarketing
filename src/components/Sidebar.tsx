@@ -12,6 +12,7 @@ import {
   LogOut,
   GitBranch,
   BarChart3,
+  ShieldCheck,
 } from "lucide-react";
 import { logout } from "@/lib/auth/client";
 
@@ -29,10 +30,12 @@ export function Sidebar({
   orgName,
   userName,
   role,
+  isPlatformAdmin = false,
 }: {
   orgName: string;
   userName: string;
   role: string;
+  isPlatformAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -69,6 +72,14 @@ export function Sidebar({
             </Link>
           );
         })}
+        {isPlatformAdmin && (
+          <Link
+            href="/admin"
+            className="mt-2 flex items-center gap-3 rounded-lg border-t border-slate-100 px-3 pt-3 text-sm font-medium text-neutral-900 hover:bg-slate-50"
+          >
+            <ShieldCheck size={18} /> Platform admin
+          </Link>
+        )}
       </nav>
 
       <div className="border-t border-slate-200 p-3">

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, getOrgIdForUser, requireOrg } from "@/lib/auth/session";
+import { isPlatformAdminEmail } from "@/lib/auth/platformAdmin";
 import { Sidebar } from "@/components/Sidebar";
 
 export default async function AppLayout({
@@ -20,6 +21,7 @@ export default async function AppLayout({
         orgName={org.name}
         userName={member.displayName || member.email}
         role={member.role}
+        isPlatformAdmin={isPlatformAdminEmail(user.email)}
       />
       <main className="flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
