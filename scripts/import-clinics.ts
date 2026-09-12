@@ -27,6 +27,31 @@ const COMMIT = process.argv.includes("--commit");
 const NDJSON = path.join(process.cwd(), "Practitioner List", "clinics.ndjson");
 const COLLECTION = "clinics";
 const BATCH = 500;
+// Pause between batches so a bulk load respects Firestore's write-rate ramp-up
+// (override with IMPORT_DELAY_MS). Blaze removes the daily cap, not the rate cap.
+const DELAY_MS = Number(process.env.IMPORT_DELAY_MS ?? 200);
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Commit a batch, retrying transient/rate-limit errors with backoff. */
+async function commitWithRetry(
+  b: FirebaseFirestore.WriteBatch,
+  attempt = 0
+): Promise<void> {
+  try {
+    await b.commit();
+  } catch (err) {
+    const code = (err as { code?: number }).code;
+    // 4 DEADLINE_EXCEEDED, 8 RESOURCE_EXHAUSTED, 10 ABORTED, 13 INTERNAL, 14 UNAVAILABLE
+    if (code !== undefined && [4, 8, 10, 13, 14].includes(code) && attempt < 6) {
+      const wait = Math.min(30000, 1000 * 2 ** attempt);
+      console.warn(`  batch retry ${attempt + 1} (code ${code}); waiting ${wait}ms…`);
+      await sleep(wait);
+      return commitWithRetry(b, attempt + 1);
+    }
+    throw err;
+  }
+}
 
 function db() {
   if (!getApps().length) {
@@ -71,9 +96,10 @@ async function main() {
 
   async function flush() {
     if (batch && inBatch > 0) {
-      await batch.commit();
+      await commitWithRetry(batch);
       batch = store!.batch();
       inBatch = 0;
+      if (DELAY_MS > 0) await sleep(DELAY_MS);
     }
   }
 
