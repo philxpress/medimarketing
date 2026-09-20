@@ -76,6 +76,9 @@ const SAMPLE = {
 // Sentinel listId for "email every contact" — lets a campaign target the whole
 // subscribed contact set without first creating a named list.
 const ALL_CONTACTS = "__all__";
+// Sentinel dropdown value that triggers creating a new list from the current
+// audience, then selects it.
+const NEW_LIST = "__new_list__";
 
 const STEPS = [
   { n: 1, title: "Campaign type" },
@@ -327,6 +330,35 @@ export function CampaignWizard({
     } finally {
       setBusy(false);
       if (attachRef.current) attachRef.current.value = "";
+    }
+  }
+
+  // Snapshot the current audience into a new named list, then select it. Uses
+  // the currently matched recipients (or all subscribed contacts as a fallback).
+  async function createListFromAudience() {
+    const name = window.prompt("Name the new list:");
+    if (!name?.trim()) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const pool = baseRecipients.length
+        ? baseRecipients
+        : contacts.filter((c) => c.subscribed);
+      const res = await fetch("/api/lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), contactIds: pool.map((c) => c.id) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setExcluded(new Set());
+      setListId(data.id);
+      setMsg(`Created list "${data.name}" with ${data.contactIds.length} contact(s).`);
+      router.refresh(); // pull the new list into the dropdown (wizard state persists)
+    } catch (err) {
+      setMsg(`Couldn't create list: ${err}`);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -652,7 +684,13 @@ export function CampaignWizard({
             <select
               className="input"
               value={listId}
-              onChange={(e) => setListId(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === NEW_LIST) {
+                  createListFromAudience(); // keep current selection until it's made
+                  return;
+                }
+                setListId(e.target.value);
+              }}
             >
               <option value={ALL_CONTACTS}>All contacts ({contacts.length})</option>
               {lists.map((l) => (
@@ -660,6 +698,7 @@ export function CampaignWizard({
                   {l.name} ({l.contactIds.length})
                 </option>
               ))}
+              <option value={NEW_LIST}>＋ New list…</option>
             </select>
           </div>
 

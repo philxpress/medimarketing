@@ -2,7 +2,17 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, ListChecks, Search, UserPlus, X, Trash2, Download } from "lucide-react";
+import {
+  Upload,
+  ListChecks,
+  Search,
+  UserPlus,
+  X,
+  Trash2,
+  Download,
+  Plus,
+  Pencil,
+} from "lucide-react";
 import type { Contact } from "@/lib/types";
 
 interface ListSummary {
@@ -31,6 +41,8 @@ export function ContactsClient({
   const [edit, setEdit] = useState<EditTarget>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [listName, setListName] = useState("");
+  // Row selection for building lists from existing contacts.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const filtered = contacts.filter((c) => {
     const q = query.toLowerCase();
@@ -65,6 +77,109 @@ export function ContactsClient({
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllFiltered() {
+    setSelected((prev) => {
+      const allShown = filtered.every((c) => prev.has(c.id));
+      const next = new Set(prev);
+      if (allShown) filtered.forEach((c) => next.delete(c.id));
+      else filtered.forEach((c) => next.add(c.id));
+      return next;
+    });
+  }
+
+  /** Create a new list. Seeds it with the current selection (if any). */
+  async function createList() {
+    const name = window.prompt("Name the new list:");
+    if (!name?.trim()) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), contactIds: [...selected] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMsg(
+        `Created list "${data.name}" with ${data.contactIds.length} contact(s).`
+      );
+      setSelected(new Set());
+      router.refresh();
+    } catch (err) {
+      setMsg(`Couldn't create list: ${err}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Add the current selection to an existing list. */
+  async function addSelectedToList(listId: string) {
+    if (!listId || selected.size === 0) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/lists/${listId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addContactIds: [...selected] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      const list = lists.find((l) => l.id === listId);
+      setMsg(`Added ${selected.size} contact(s) to "${list?.name ?? "list"}".`);
+      setSelected(new Set());
+      router.refresh();
+    } catch (err) {
+      setMsg(`Couldn't update list: ${err}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function renameList(list: ListSummary) {
+    const name = window.prompt("Rename list:", list.name);
+    if (!name?.trim() || name.trim() === list.name) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/lists/${list.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      router.refresh();
+    } catch (err) {
+      setMsg(`Couldn't rename list: ${err}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteList(list: ListSummary) {
+    if (!window.confirm(`Delete the list "${list.name}"? Contacts are kept.`)) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/lists/${list.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error);
+      router.refresh();
+    } catch (err) {
+      setMsg(`Couldn't delete list: ${err}`);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -116,21 +231,50 @@ export function ContactsClient({
         </div>
       )}
 
-      {lists.length > 0 && (
-        <div className="card">
-          <div className="mb-3 flex items-center gap-2">
+      <div className="card">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <ListChecks size={18} className="text-neutral-500" />
             <h2 className="font-semibold text-neutral-900">Lists</h2>
           </div>
+          <button className="btn-secondary" onClick={createList} disabled={busy}>
+            <Plus size={15} /> New list
+          </button>
+        </div>
+        {lists.length === 0 ? (
+          <p className="text-sm text-neutral-500">
+            No lists yet. Tick contacts below and choose “New list from selected”,
+            or click “New list” to create an empty one.
+          </p>
+        ) : (
           <div className="flex flex-wrap gap-2">
             {lists.map((l) => (
-              <span key={l.id} className="badge bg-slate-100 text-neutral-900">
+              <span
+                key={l.id}
+                className="badge inline-flex items-center gap-1.5 bg-slate-100 text-neutral-900"
+              >
                 {l.name} · {l.count}
+                <button
+                  className="text-neutral-400 hover:text-neutral-900"
+                  title="Rename"
+                  onClick={() => renameList(l)}
+                  disabled={busy}
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  className="text-neutral-400 hover:text-red-600"
+                  title="Delete"
+                  onClick={() => deleteList(l)}
+                  disabled={busy}
+                >
+                  <X size={13} />
+                </button>
               </span>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="card">
         <div className="mb-4 flex items-center justify-between gap-4">
@@ -147,6 +291,40 @@ export function ContactsClient({
             />
           </div>
         </div>
+        {selected.size > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-brand-200 bg-brand-50/60 px-4 py-2 text-sm">
+            <span className="font-medium text-neutral-900">
+              {selected.size} selected
+            </span>
+            <button className="btn-primary" onClick={createList} disabled={busy}>
+              <Plus size={15} /> New list from selected
+            </button>
+            {lists.length > 0 && (
+              <select
+                className="input w-auto"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) addSelectedToList(e.target.value);
+                  e.target.value = "";
+                }}
+                disabled={busy}
+              >
+                <option value="">Add to existing list…</option>
+                {lists.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name} ({l.count})
+                  </option>
+                ))}
+              </select>
+            )}
+            <button
+              className="text-neutral-500 hover:text-neutral-900"
+              onClick={() => setSelected(new Set())}
+            >
+              Clear
+            </button>
+          </div>
+        )}
         {filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-neutral-500">No contacts yet.</p>
         ) : (
@@ -154,6 +332,17 @@ export function ContactsClient({
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase text-neutral-500">
                 <tr className="border-b border-slate-100">
+                  <th className="w-8 py-2 pr-3 font-medium">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all"
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((c) => selected.has(c.id))
+                      }
+                      onChange={toggleSelectAllFiltered}
+                    />
+                  </th>
                   <th className="py-2 pr-4 font-medium">Name</th>
                   <th className="py-2 pr-4 font-medium">Email</th>
                   <th className="py-2 pr-4 font-medium">Practice</th>
@@ -166,9 +355,22 @@ export function ContactsClient({
                 {filtered.slice(0, 200).map((c) => (
                   <tr
                     key={c.id}
-                    className="cursor-pointer hover:bg-slate-50"
+                    className={`cursor-pointer hover:bg-slate-50 ${
+                      selected.has(c.id) ? "bg-brand-50/50" : ""
+                    }`}
                     onClick={() => setEdit(c)}
                   >
+                    <td
+                      className="py-2 pr-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${c.email}`}
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                      />
+                    </td>
                     <td className="py-2 pr-4 text-neutral-900">
                       {[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}
                     </td>
