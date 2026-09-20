@@ -21,7 +21,10 @@ export function ContactsClient({
   lists: ListSummary[];
 }) {
   const router = useRouter();
-  const [contacts] = useState(initialContacts);
+  // Use the prop directly (not useState) so router.refresh() after an import or
+  // edit re-renders the table with the fresh server data. useState would freeze
+  // the first render's value and hide newly imported contacts until a reload.
+  const contacts = initialContacts;
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);

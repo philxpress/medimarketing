@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { Attachment } from "@/lib/types";
 import { zonedTimeToEpoch, tzAbbrev } from "@/lib/tz";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 interface Mailbox {
   provider: "gmail" | "microsoft";
@@ -72,6 +73,10 @@ const SAMPLE = {
   email: "reception@brightsmiledental.example",
 };
 
+// Sentinel listId for "email every contact" — lets a campaign target the whole
+// subscribed contact set without first creating a named list.
+const ALL_CONTACTS = "__all__";
+
 const STEPS = [
   { n: 1, title: "Campaign type" },
   { n: 2, title: "Name & sender" },
@@ -90,6 +95,7 @@ export function CampaignWizard({
   facets = { specialties: [], cities: [], tags: [] },
   timezone = "Australia/Sydney",
   imageEnabled,
+  abEnabled = false,
 }: {
   mailboxes: Mailbox[];
   lists: ListSummary[];
@@ -98,6 +104,7 @@ export function CampaignWizard({
   facets?: Facets;
   timezone?: string;
   imageEnabled: boolean;
+  abEnabled?: boolean;
 }) {
   const router = useRouter();
 
@@ -111,7 +118,7 @@ export function CampaignWizard({
   const [fromIdx, setFromIdx] = useState(0);
 
   // Step 3 — My List
-  const [listId, setListId] = useState(lists[0]?.id ?? "");
+  const [listId, setListId] = useState(lists[0]?.id ?? ALL_CONTACTS);
   const [segment, setSegment] = useState<{ specialty: string; city: string; tag: string }>({
     specialty: "",
     city: "",
@@ -124,10 +131,18 @@ export function CampaignWizard({
 
   // Step 4
   const [subject, setSubject] = useState("");
+  const [subjectB, setSubjectB] = useState("");
+  const [abTest, setAbTest] = useState(false);
+  const [preheader, setPreheader] = useState("");
   const [body, setBody] = useState(
     "<p>Hi {{firstName}},</p>\n<p>Write your message to {{practiceName}} here…</p>"
   );
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+
+  // Autosave — the draft's id once created, and a small status line.
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const savingRef = useRef(false);
 
   // Step 6 — individual recipient selection (track exclusions).
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
@@ -161,11 +176,20 @@ export function CampaignWizard({
       return contacts.filter((c) => c.subscribed && c.specialty === profession);
     }
     if (campaignType === "list") {
-      const list = lists.find((l) => l.id === listId);
-      if (!list) return [] as WizardContact[];
-      return list.contactIds
-        .map((id) => contactsById.get(id))
-        .filter((c): c is WizardContact => Boolean(c && c.subscribed))
+      // "All contacts" targets the whole contact set; a named list resolves its
+      // members. Either way, keep only subscribed contacts matching the segment.
+      let pool: WizardContact[];
+      if (listId === ALL_CONTACTS) {
+        pool = contacts;
+      } else {
+        const list = lists.find((l) => l.id === listId);
+        if (!list) return [] as WizardContact[];
+        pool = list.contactIds
+          .map((id) => contactsById.get(id))
+          .filter((c): c is WizardContact => Boolean(c));
+      }
+      return pool
+        .filter((c) => c.subscribed)
         .filter((c) => {
           if (segment.specialty && c.specialty !== segment.specialty) return false;
           if (segment.city && c.city !== segment.city) return false;
@@ -217,10 +241,6 @@ export function CampaignWizard({
     setSubject(t.subject);
     setBody(t.body);
     setMsg(`Loaded template "${t.name.replace(/^★ /, "")}".`);
-  }
-
-  function insertToken(token: string) {
-    setBody((b) => `${b} {{${token}}}`);
   }
 
   async function saveAsTemplate() {
@@ -281,7 +301,8 @@ export function CampaignWizard({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setBody((b) => `${b}\n<p><img src="${data.dataUrl}" alt="" style="max-width:100%"/></p>`);
+      // data.url is a hosted https image (inline base64 doesn't render in Gmail/Outlook).
+      setBody((b) => `${b}\n<p><img src="${data.url}" alt="" style="max-width:100%"/></p>`);
       setMsg("Image added to the body.");
     } catch (err) {
       setMsg(`Image error: ${err}`);
@@ -362,6 +383,95 @@ export function CampaignWizard({
     return Object.keys(p).length ? p : undefined;
   };
 
+  // The content payload shared by autosave, "save draft", send and schedule.
+  const buildPayload = useCallback(
+    (scheduledAt?: number | null) => ({
+      name,
+      subject,
+      subjectB: abTest && subjectB.trim() ? subjectB.trim() : undefined,
+      preheader: preheader.trim() || undefined,
+      body,
+      fromProvider: mb?.provider,
+      fromEmail: mb?.email,
+      listId:
+        campaignType === "list" && listId !== ALL_CONTACTS ? listId : undefined,
+      attachments,
+      segment: cleanSegment(),
+      prospecting: cleanProspecting(),
+      recipientIds: selectedIds,
+      ...(scheduledAt !== undefined ? { scheduledAt } : {}),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      name,
+      subject,
+      subjectB,
+      abTest,
+      preheader,
+      body,
+      mb,
+      campaignType,
+      listId,
+      attachments,
+      selectedIds,
+      segment,
+      profession,
+      postcode,
+      distanceKm,
+    ]
+  );
+
+  /**
+   * Create the draft on first call, then update it in place. Returns the
+   * campaign id. Only content is persisted here (no scheduling/sending).
+   */
+  const persist = useCallback(
+    async (scheduledAt?: number | null): Promise<string> => {
+      const payload = buildPayload(scheduledAt);
+      if (draftId) {
+        const res = await fetch(`/api/campaigns/${draftId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        return draftId;
+      }
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setDraftId(data.id);
+      return data.id;
+    },
+    [buildPayload, draftId]
+  );
+
+  // Debounced autosave: once name/subject/body exist, keep the draft in sync so
+  // a refresh never loses work. Skips while a send/schedule is in flight.
+  useEffect(() => {
+    if (busy) return;
+    if (!name.trim() || !subject.trim() || !body.trim() || campaignType === "") return;
+    const t = setTimeout(async () => {
+      if (savingRef.current) return;
+      savingRef.current = true;
+      try {
+        await persist();
+        setSavedAt(Date.now());
+      } catch {
+        /* transient — the next change retries */
+      } finally {
+        savingRef.current = false;
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, subject, subjectB, preheader, body, campaignType, listId, JSON.stringify(selectedIds)]);
+
   async function save(mode: "draft" | "send" | "schedule") {
     if (mode === "schedule" && !scheduleAt) {
       setMsg("Pick a date and time to schedule.");
@@ -370,38 +480,23 @@ export function CampaignWizard({
     setBusy(true);
     setMsg(null);
     try {
-      const scheduledAt =
-        mode === "schedule" ? zonedTimeToEpoch(scheduleAt, timezone) : undefined;
-      if (mode === "schedule" && scheduledAt && scheduledAt <= Date.now()) {
-        throw new Error("Scheduled time must be in the future.");
+      if (mode === "schedule") {
+        const scheduledAt = zonedTimeToEpoch(scheduleAt, timezone);
+        if (scheduledAt <= Date.now()) {
+          throw new Error("Scheduled time must be in the future.");
+        }
+        const id = await persist(scheduledAt);
+        router.push(`/campaigns/${id}`);
+        return;
       }
 
-      const createRes = await fetch("/api/campaigns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          subject,
-          body,
-          fromProvider: mb?.provider,
-          fromEmail: mb?.email,
-          listId: campaignType === "list" ? listId : undefined,
-          attachments,
-          segment: cleanSegment(),
-          prospecting: cleanProspecting(),
-          recipientIds: selectedIds,
-          scheduledAt,
-        }),
-      });
-      const created = await createRes.json();
-      if (!createRes.ok) throw new Error(created.error);
-
+      const id = await persist();
       if (mode === "send") {
-        const sendRes = await fetch(`/api/campaigns/${created.id}/send`, { method: "POST" });
+        const sendRes = await fetch(`/api/campaigns/${id}/send`, { method: "POST" });
         const sent = await sendRes.json();
         if (!sendRes.ok) throw new Error(sent.error);
       }
-      router.push(`/campaigns/${created.id}`);
+      router.push(`/campaigns/${id}`);
     } catch (err) {
       setMsg(`Failed: ${err}`);
       setBusy(false);
@@ -558,17 +653,13 @@ export function CampaignWizard({
               className="input"
               value={listId}
               onChange={(e) => setListId(e.target.value)}
-              disabled={lists.length === 0}
             >
-              {lists.length === 0 ? (
-                <option value="">No lists yet</option>
-              ) : (
-                lists.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} ({l.contactIds.length})
-                  </option>
-                ))
-              )}
+              <option value={ALL_CONTACTS}>All contacts ({contacts.length})</option>
+              {lists.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name} ({l.contactIds.length})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -619,7 +710,14 @@ export function CampaignWizard({
 
           <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-neutral-900">
             <Users size={14} className="mr-1 inline" />
-            {chosenList ? (
+            {listId === ALL_CONTACTS ? (
+              <>
+                <span className="font-semibold">{baseRecipients.length}</span> subscribed
+                contact{baseRecipients.length === 1 ? "" : "s"} across{" "}
+                <span className="font-medium">all contacts</span>. Fine-tune exactly who
+                gets this in step 6.
+              </>
+            ) : chosenList ? (
               <>
                 <span className="font-semibold">{baseRecipients.length}</span> subscribed
                 contact{baseRecipients.length === 1 ? "" : "s"} match in{" "}
@@ -732,17 +830,55 @@ export function CampaignWizard({
                 </select>
               </div>
               <div>
-                <label className="label">Subject</label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="label mb-0">Subject{abTest ? " A" : ""}</label>
+                  {abEnabled && (
+                    <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 accent-brand-600"
+                        checked={abTest}
+                        onChange={(e) => setAbTest(e.target.checked)}
+                      />
+                      A/B test subject line
+                    </label>
+                  )}
+                </div>
                 <input
                   className="input"
                   placeholder="A note for {{practiceName}}"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                 />
+                {abTest && (
+                  <input
+                    className="input mt-2"
+                    placeholder="Subject B — the alternative to test"
+                    value={subjectB}
+                    onChange={(e) => setSubjectB(e.target.value)}
+                  />
+                )}
+                {abTest && (
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Recipients are split 50/50 between the two subjects; per-variant
+                    open &amp; click rates appear on the campaign report.
+                  </p>
+                )}
               </div>
+
+              <div>
+                <label className="label">Preview text (preheader)</label>
+                <input
+                  className="input"
+                  placeholder="The short line shown after the subject in most inboxes"
+                  value={preheader}
+                  onChange={(e) => setPreheader(e.target.value)}
+                />
+              </div>
+
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <label className="label mb-0">Body (HTML + merge tokens)</label>
+                  <label className="label mb-0">Body</label>
                   <button
                     type="button"
                     className="text-xs text-brand-600 hover:underline"
@@ -759,23 +895,10 @@ export function CampaignWizard({
                   className="hidden"
                   onChange={(e) => e.target.files?.[0] && importHtml(e.target.files[0])}
                 />
-                <div className="mb-2 flex flex-wrap gap-1">
-                  {MERGE_FIELDS.map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => insertToken(f)}
-                      className="badge bg-slate-100 text-neutral-900 hover:bg-brand-100 hover:text-brand-700"
-                    >
-                      + {f}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  className="input font-mono text-xs"
-                  rows={12}
+                <RichTextEditor
                   value={body}
-                  onChange={(e) => setBody(e.target.value)}
+                  onChange={setBody}
+                  mergeFields={MERGE_FIELDS}
                 />
               </div>
 
@@ -1032,7 +1155,10 @@ export function CampaignWizard({
                 />
               ) : (
                 <>
-                  <Row k="List" v={chosenList?.name ?? "—"} />
+                  <Row
+                    k="List"
+                    v={listId === ALL_CONTACTS ? "All contacts" : chosenList?.name ?? "—"}
+                  />
                   {cleanSegment() && (
                     <Row
                       k="Segment"
@@ -1045,6 +1171,10 @@ export function CampaignWizard({
               )}
               <Row k="Recipients" v={`${selectedCount} selected`} />
               <Row k="Subject" v={subject || "—"} />
+              {abTest && subjectB.trim() && (
+                <Row k="Subject B (A/B)" v={subjectB} />
+              )}
+              {preheader.trim() && <Row k="Preview text" v={preheader} />}
               {attachments.length > 0 && (
                 <Row k="Attachments" v={`${attachments.length} file(s)`} />
               )}
@@ -1115,6 +1245,11 @@ export function CampaignWizard({
           <ChevronLeft size={16} /> Back
         </button>
         <div className="flex items-center gap-3">
+          {savedAt && (
+            <span className="flex items-center gap-1 text-xs text-neutral-500">
+              <Check size={13} className="text-brand-600" /> Draft saved
+            </span>
+          )}
           <button
             type="button"
             className="btn-secondary"
