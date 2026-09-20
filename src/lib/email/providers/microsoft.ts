@@ -9,12 +9,16 @@ import { decrypt } from "@/lib/crypto";
 import type { OutgoingEmail } from "@/lib/email/mime";
 import type { SendResult } from "./index";
 
+/** Scope that lets us read NDR/bounce messages. */
+export const MICROSOFT_READ_SCOPE = "Mail.Read";
+
 export const MICROSOFT_SCOPES = [
   "offline_access",
   "openid",
   "email",
   "User.Read",
   "Mail.Send",
+  MICROSOFT_READ_SCOPE,
 ];
 
 function tenant(): string {
@@ -38,6 +42,8 @@ interface TokenResponse {
   access_token: string;
   refresh_token?: string;
   expires_in: number;
+  /** Space-delimited scopes actually granted. */
+  scope?: string;
 }
 
 export async function microsoftExchangeCode(
@@ -61,6 +67,16 @@ export async function microsoftExchangeCode(
   );
   if (!res.ok) throw new Error(`Microsoft token exchange failed: ${await res.text()}`);
   return res.json();
+}
+
+/** Mint a Graph access token from a stored integration (for reading mail). */
+export async function graphAccessTokenFor(
+  integration: Integration
+): Promise<string> {
+  if (!integration.refreshTokenEnc) {
+    throw new Error("Microsoft integration has no stored refresh token");
+  }
+  return refreshAccessToken(decrypt(integration.refreshTokenEnc));
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<string> {

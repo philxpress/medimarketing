@@ -4,6 +4,8 @@ import { getContacts, getIntegrations, getLists, getTemplates } from "@/lib/data
 import { PageHeader } from "@/components/PageHeader";
 import { CampaignWizard } from "@/components/CampaignWizard";
 import { STARTER_TEMPLATES } from "@/lib/starterTemplates";
+import { planFor } from "@/lib/plans";
+import { storageConfigured } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,7 @@ export default async function NewCampaignPage() {
     .map((i) => ({ provider: i.provider, email: i.connectedEmail }));
 
   const ready = connected.length > 0 && Boolean(org.postalAddress);
+  const plan = planFor(org.plan);
 
   // Facets for segmentation (distinct, sorted).
   const distinct = (vals: (string | undefined)[]) =>
@@ -81,7 +84,8 @@ export default async function NewCampaignPage() {
         templates={templateOptions}
         facets={facets}
         timezone={org.timezone ?? "Australia/Sydney"}
-        imageEnabled
+        imageEnabled={plan.aiImages && storageConfigured()}
+        abEnabled={plan.abTesting}
       />
     </>
   );

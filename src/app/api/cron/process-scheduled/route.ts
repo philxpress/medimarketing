@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
-import { sendCampaign } from "@/lib/email/sendCampaign";
+import { startCampaignSend } from "@/lib/email/sendCampaign";
 import type { Campaign } from "@/lib/types";
 
 // Dynamic: this is a scheduled job, never prerendered.
@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
     const orgId = doc.ref.parent.parent?.id;
     if (!orgId) continue;
     try {
-      await sendCampaign(orgId, campaign.id);
+      // Seeds the queue + sends the first batch; process-sending drains the rest.
+      await startCampaignSend(orgId, campaign.id);
       results.push({ id: campaign.id, ok: true });
     } catch (err) {
       // Mark failed so we don't retry a broken campaign forever.

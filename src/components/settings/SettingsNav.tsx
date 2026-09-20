@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Building2, Plug, Users, ShieldCheck } from "lucide-react";
+import { User, Building2, Plug, Users, ShieldCheck, Gauge } from "lucide-react";
 
 const ITEMS = [
   { href: "/settings/profile", label: "User profile", icon: User },
   { href: "/settings/company", label: "Company", icon: Building2 },
   { href: "/settings/mailboxes", label: "Connected mailboxes", icon: Plug },
+  { href: "/settings/plan", label: "Plan & usage", icon: Gauge },
   { href: "/settings/team", label: "Teams", icon: Users },
   { href: "/settings/security", label: "Security", icon: ShieldCheck },
 ];

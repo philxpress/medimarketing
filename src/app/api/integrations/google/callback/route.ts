@@ -3,7 +3,11 @@ import { cookies } from "next/headers";
 import { google } from "googleapis";
 import { adminDb } from "@/lib/firebase/admin";
 import { requireOrg } from "@/lib/auth/session";
-import { googleOAuthClient, GMAIL_SCOPES } from "@/lib/email/providers/gmail";
+import {
+  googleOAuthClient,
+  GMAIL_SCOPES,
+  GMAIL_READ_SCOPE,
+} from "@/lib/email/providers/gmail";
 import { encrypt } from "@/lib/crypto";
 import { logEvent } from "@/lib/data";
 import type { Integration } from "@/lib/types";
@@ -37,14 +41,16 @@ export async function GET(req: NextRequest) {
     const me = await oauth2Api.userinfo.get();
     const email = me.data.email ?? "";
 
+    const grantedScopes = (tokens.scope ?? "").split(/\s+/).filter(Boolean);
     const integration: Integration = {
       provider: "gmail",
       connectedEmail: email,
       connectedByUid: user.uid,
-      scopes: GMAIL_SCOPES,
+      scopes: grantedScopes.length ? grantedScopes : GMAIL_SCOPES,
       refreshTokenEnc: encrypt(tokens.refresh_token),
       expiresAt: tokens.expiry_date ?? undefined,
       status: "connected",
+      canReadMailbox: grantedScopes.includes(GMAIL_READ_SCOPE),
       updatedAt: Date.now(),
     };
     await adminDb

@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { requireOrg } from "@/lib/auth/session";
 import { getCampaign } from "@/lib/data";
-import { sendCampaign } from "@/lib/email/sendCampaign";
+import { startCampaignSend } from "@/lib/email/sendCampaign";
 
 // Dynamic: reads cookies/session and does per-request IO — never prerender.
 export const dynamic = "force-dynamic";
-// 60s is the Vercel Hobby ceiling; large lists should use scheduled/queued sends.
+// 60s is the Vercel Hobby ceiling. We seed the queue and send the first batch
+// here; the process-sending cron drains the rest, so list size is unbounded.
 export const maxDuration = 60;
 
-/** Send a campaign immediately to its list. */
+/** Kick off a campaign send: seed the recipient queue and send the first batch. */
 export async function POST(
   _req: Request,
   { params }: { params: { id: string } }
@@ -23,8 +24,8 @@ export async function POST(
         { status: 409 }
       );
     }
-    const { stats } = await sendCampaign(orgId, params.id, user.uid);
-    return NextResponse.json({ ok: true, stats });
+    const result = await startCampaignSend(orgId, params.id, user.uid);
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

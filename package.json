@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "check:firebase": "tsx scripts/check-firebase.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ./tests/setenv.mjs --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",

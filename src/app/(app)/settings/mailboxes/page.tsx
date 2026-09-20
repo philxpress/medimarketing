@@ -11,20 +11,17 @@ export default async function MailboxesSettingsPage() {
     gmail: integrations.find((i) => i.provider === "gmail") ?? null,
     microsoft: integrations.find((i) => i.provider === "microsoft") ?? null,
   };
+  const toConn = (i: (typeof integrations)[number] | null) =>
+    i && {
+      email: i.connectedEmail,
+      status: i.status,
+      lastError: i.lastError,
+      canReadMailbox: Boolean(i.canReadMailbox),
+    };
   return (
     <IntegrationsPanel
-      gmail={
-        byProvider.gmail && {
-          email: byProvider.gmail.connectedEmail,
-          status: byProvider.gmail.status,
-        }
-      }
-      microsoft={
-        byProvider.microsoft && {
-          email: byProvider.microsoft.connectedEmail,
-          status: byProvider.microsoft.status,
-        }
-      }
+      gmail={toConn(byProvider.gmail)}
+      microsoft={toConn(byProvider.microsoft)}
     />
   );
 }

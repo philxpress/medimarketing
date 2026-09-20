@@ -17,6 +17,8 @@ const attachmentSchema = z.object({
 const schema = z.object({
   name: z.string().min(1).max(140),
   subject: z.string().min(1).max(300),
+  subjectB: z.string().max(300).optional(),
+  preheader: z.string().max(300).optional(),
   body: z.string().min(1),
   fromProvider: z.enum(["gmail", "microsoft"]).optional(),
   fromEmail: z.string().email().optional(),
@@ -67,6 +69,8 @@ export async function POST(req: NextRequest) {
       id: ref.id,
       name: body.name,
       subject: body.subject,
+      ...(body.subjectB?.trim() ? { subjectB: body.subjectB.trim() } : {}),
+      ...(body.preheader?.trim() ? { preheader: body.preheader.trim() } : {}),
       body: body.body,
       fromProvider: body.fromProvider ?? "gmail",
       fromEmail: body.fromEmail ?? "",

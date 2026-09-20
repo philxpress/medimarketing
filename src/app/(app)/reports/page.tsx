@@ -30,11 +30,12 @@ export default async function ReportsPage() {
       acc.sent += c.stats.sent;
       acc.opened += c.stats.opened ?? 0;
       acc.clicked += c.stats.clicked ?? 0;
-      acc.bounced += c.stats.failed;
+      acc.bounced += c.stats.bounced ?? 0; // real (async) bounces
+      acc.failed += c.stats.failed; // send-time errors
       acc.unsubscribed += c.stats.skipped;
       return acc;
     },
-    { sent: 0, opened: 0, clicked: 0, bounced: 0, unsubscribed: 0 }
+    { sent: 0, opened: 0, clicked: 0, bounced: 0, failed: 0, unsubscribed: 0 }
   );
 
   const rate = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
@@ -60,21 +61,21 @@ export default async function ReportsPage() {
           <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
             <Metric label="Emails sent" value={totals.sent} icon={<Send size={16} />} />
             <Metric
-              label="Open rate"
-              value={`${rate(totals.opened, totals.sent)}%`}
-              sub={`${totals.opened} opened`}
-              icon={<MailOpen size={16} />}
-            />
-            <Metric
               label="Click rate"
               value={`${rate(totals.clicked, totals.sent)}%`}
               sub={`${totals.clicked} clicked`}
               icon={<MousePointerClick size={16} />}
             />
             <Metric
+              label="Open rate"
+              value={`${rate(totals.opened, totals.sent)}%`}
+              sub={`${totals.opened} opened · indicative`}
+              icon={<MailOpen size={16} />}
+            />
+            <Metric
               label="Bounced"
               value={totals.bounced}
-              sub="failed / rejected"
+              sub={totals.failed ? `+${totals.failed} send errors` : "hard bounces"}
               icon={<MailX size={16} />}
             />
             <Metric
@@ -94,7 +95,6 @@ export default async function ReportsPage() {
                   <th className="px-4 py-3 text-right font-medium">Clicked</th>
                   <th className="px-4 py-3 text-right font-medium">Bounced</th>
                   <th className="px-4 py-3 text-right font-medium">Unsub.</th>
-                  <th className="px-4 py-3 text-right font-medium">Replied</th>
                   <th className="px-6 py-3 font-medium">Sent on</th>
                 </tr>
               </thead>
@@ -128,9 +128,10 @@ export default async function ReportsPage() {
                           ({rate(clicked, c.stats.sent)}%)
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-neutral-900">{c.stats.failed}</td>
+                      <td className="px-4 py-3 text-right text-neutral-900">
+                        {c.stats.bounced ?? 0}
+                      </td>
                       <td className="px-4 py-3 text-right text-neutral-900">{c.stats.skipped}</td>
-                      <td className="px-4 py-3 text-right text-neutral-400">—</td>
                       <td className="px-6 py-3 text-neutral-900">
                         {c.completedAt ? formatInTz(c.completedAt, tz) : "—"}
                       </td>
@@ -142,9 +143,11 @@ export default async function ReportsPage() {
           </div>
 
           <p className="mt-3 text-xs text-neutral-500">
-            Opens and clicks are tracked per recipient via a tracking pixel and link
-            redirects. &ldquo;Bounced&rdquo; counts send-time failures and rejections.
-            Reply tracking isn&apos;t enabled yet — the Replied column is a placeholder.
+            Clicks are tracked via link redirects and are the most reliable signal.
+            Opens are counted with a tracking pixel and read as <em>indicative</em>: privacy
+            features (e.g. Apple Mail Privacy Protection) pre-load images and inflate open
+            counts. &ldquo;Bounced&rdquo; counts real delivery failures detected from your
+            mailbox&apos;s bounce notifications; transient send errors are shown separately.
           </p>
         </>
       )}

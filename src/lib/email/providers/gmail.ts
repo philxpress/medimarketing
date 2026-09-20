@@ -10,8 +10,12 @@ import { decrypt } from "@/lib/crypto";
 import { buildMime, type OutgoingEmail } from "@/lib/email/mime";
 import type { SendResult } from "./index";
 
+/** Scope that lets us read NDR/bounce messages. Optional (granular consent). */
+export const GMAIL_READ_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+
 export const GMAIL_SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
+  GMAIL_READ_SCOPE,
   "https://www.googleapis.com/auth/userinfo.email",
   "openid",
 ];
@@ -23,6 +27,16 @@ export function googleOAuthClient() {
     process.env.GOOGLE_OAUTH_CLIENT_SECRET,
     `${base}/api/integrations/google/callback`
   );
+}
+
+/** An authenticated Gmail API client from a stored integration. */
+export function gmailClientFor(integration: Integration) {
+  if (!integration.refreshTokenEnc) {
+    throw new Error("Gmail integration has no stored refresh token");
+  }
+  const oauth2 = googleOAuthClient();
+  oauth2.setCredentials({ refresh_token: decrypt(integration.refreshTokenEnc) });
+  return google.gmail({ version: "v1", auth: oauth2 });
 }
 
 export async function sendViaGmail(

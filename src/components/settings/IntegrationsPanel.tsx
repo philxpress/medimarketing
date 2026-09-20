@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, CheckCircle2, XCircle } from "lucide-react";
+import { Mail, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
 
 interface Conn {
   email: string;
   status: string;
+  lastError?: string;
+  canReadMailbox?: boolean;
 }
 
 export function IntegrationsPanel({
@@ -80,8 +82,13 @@ function Card({
   onDisconnect: () => void;
 }) {
   const connected = conn && conn.status === "connected";
+  const errored = conn && conn.status === "error";
   return (
-    <div className="card flex items-center justify-between gap-4">
+    <div
+      className={`card flex items-center justify-between gap-4 ${
+        errored ? "border-amber-300 bg-amber-50/40" : ""
+      }`}
+    >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-neutral-900">
           <Mail size={18} />
@@ -90,11 +97,28 @@ function Card({
           <div className="font-medium text-neutral-900">{name}</div>
           <div className="text-sm text-neutral-900">{desc}</div>
           {connected && (
-            <div className="mt-1 flex items-center gap-1 text-sm text-neutral-900">
-              <CheckCircle2 size={14} /> {conn!.email}
+            <>
+              <div className="mt-1 flex items-center gap-1 text-sm text-neutral-900">
+                <CheckCircle2 size={14} /> {conn!.email}
+              </div>
+              <div className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+                <ShieldCheck size={12} />
+                {conn!.canReadMailbox
+                  ? "Bounce detection enabled"
+                  : "Send-only — reconnect to enable bounce detection"}
+              </div>
+            </>
+          )}
+          {errored && (
+            <div className="mt-1 text-sm text-amber-800">
+              <XCircle size={14} className="mr-1 inline" />
+              Disconnected — reconnect to resume sending.
+              {conn!.lastError && (
+                <span className="ml-1 text-xs text-amber-700">({conn!.lastError})</span>
+              )}
             </div>
           )}
-          {conn && conn.status !== "connected" && (
+          {conn && conn.status !== "connected" && !errored && (
             <div className="mt-1 flex items-center gap-1 text-sm text-neutral-900">
               <XCircle size={14} /> {conn.status}
             </div>
@@ -107,7 +131,7 @@ function Card({
         </button>
       ) : (
         <a className="btn-primary" href={connectHref}>
-          Connect
+          {errored ? "Reconnect" : "Connect"}
         </a>
       )}
     </div>

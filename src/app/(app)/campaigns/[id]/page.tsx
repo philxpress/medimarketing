@@ -34,10 +34,30 @@ export default async function CampaignDetailPage({
       : await getRecipients(orgId, params.id);
 
   const sendable = campaign.status === "draft" || campaign.status === "failed";
+
+  // A/B split results, computed from tracked recipient rows.
+  const ab = campaign.subjectB
+    ? (["A", "B"] as const).map((v) => {
+        const rows = recipients.filter((r) => (r.variant ?? "A") === v);
+        const sent = rows.filter(
+          (r) => r.status === "sent" || r.status === "bounced" || r.openedAt
+        ).length;
+        const opened = rows.filter((r) => r.openedAt).length;
+        const clicked = rows.filter((r) => r.clickedAt).length;
+        return {
+          variant: v,
+          subject: v === "A" ? campaign.subject : campaign.subjectB ?? "",
+          sent,
+          opened,
+          clicked,
+        };
+      })
+    : null;
   const s = {
     ...campaign.stats,
     opened: campaign.stats.opened ?? 0,
     clicked: campaign.stats.clicked ?? 0,
+    bounced: campaign.stats.bounced ?? 0,
   };
   const pct = (n: number) => (s.sent > 0 ? Math.round((n / s.sent) * 100) : 0);
   const showAnalytics = campaign.status === "sent" || s.sent > 0;
@@ -70,8 +90,8 @@ export default async function CampaignDetailPage({
           />
           <Metric
             label="Bounced"
-            value={s.failed}
-            sub="failed / rejected"
+            value={s.bounced}
+            sub={s.failed ? `+${s.failed} send errors` : "hard bounces"}
             icon={<MailX size={16} />}
           />
           <Metric
@@ -117,6 +137,51 @@ export default async function CampaignDetailPage({
               </div>
             )}
           </div>
+
+          {ab && (
+            <div className="card">
+              <h2 className="mb-3 font-semibold text-neutral-900">A/B subject test</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {ab.map((v) => {
+                  const openPct = v.sent ? Math.round((v.opened / v.sent) * 100) : 0;
+                  const clickPct = v.sent ? Math.round((v.clicked / v.sent) * 100) : 0;
+                  const other = ab.find((x) => x.variant !== v.variant);
+                  const winning =
+                    other &&
+                    v.sent > 0 &&
+                    other.sent > 0 &&
+                    v.clicked / v.sent >= other.clicked / other.sent &&
+                    v.clicked / v.sent > 0;
+                  return (
+                    <div
+                      key={v.variant}
+                      className={`rounded-lg border p-3 ${
+                        winning ? "border-brand-300 bg-brand-50/40" : "border-slate-200"
+                      }`}
+                    >
+                      <div className="mb-1 flex items-center gap-2 text-xs uppercase text-neutral-500">
+                        Variant {v.variant}
+                        {winning && (
+                          <span className="badge bg-brand-100 text-brand-700">Leading</span>
+                        )}
+                      </div>
+                      <div className="mb-2 truncate text-sm font-medium text-neutral-900" title={v.subject}>
+                        {v.subject || "—"}
+                      </div>
+                      <dl className="space-y-0.5 text-sm">
+                        <Row k="Sent" v={String(v.sent)} />
+                        <Row k="Opened" v={`${v.opened} (${openPct}%)`} />
+                        <Row k="Clicked" v={`${v.clicked} (${clickPct}%)`} />
+                      </dl>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs text-neutral-500">
+                Winner is judged on click rate (the most reliable signal).
+              </p>
+            </div>
+          )}
 
           {recipients.length > 0 && (
             <div className="card p-0">
@@ -246,22 +311,35 @@ function RecipientFlags({
   tz: string;
 }) {
   const deliveryFlag =
-    r.status === "sent"
-      ? { label: "Delivered", cls: "bg-neutral-900 text-white" }
-      : r.status === "failed"
-        ? {
-            label: "Bounced",
-            cls: "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-900",
-          }
-        : r.status === "skipped"
-          ? { label: "Unsubscribed", cls: "bg-neutral-100 text-neutral-500" }
-          : { label: "Pending", cls: "bg-neutral-200 text-neutral-700" };
+    r.status === "bounced"
+      ? {
+          label: "Bounced",
+          cls: "bg-white text-neutral-900 ring-1 ring-inset ring-neutral-900",
+        }
+      : r.status === "sent"
+        ? { label: "Delivered", cls: "bg-neutral-900 text-white" }
+        : r.status === "failed"
+          ? {
+              label: "Send error",
+              cls: "bg-white text-neutral-500 ring-1 ring-inset ring-neutral-300",
+            }
+          : r.status === "skipped"
+            ? { label: "Unsubscribed", cls: "bg-neutral-100 text-neutral-500" }
+            : { label: "Pending", cls: "bg-neutral-200 text-neutral-700" };
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
       <span
         className={`badge ${deliveryFlag.cls}`}
-        title={r.status === "failed" ? r.error : r.sentAt ? formatInTz(r.sentAt, tz) : undefined}
+        title={
+          r.status === "bounced"
+            ? r.bounceReason ?? "hard bounce"
+            : r.status === "failed"
+              ? r.error
+              : r.sentAt
+                ? formatInTz(r.sentAt, tz)
+                : undefined
+        }
       >
         {deliveryFlag.label}
       </span>

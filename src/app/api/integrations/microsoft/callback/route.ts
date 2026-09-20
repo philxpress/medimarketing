@@ -5,6 +5,7 @@ import { requireOrg } from "@/lib/auth/session";
 import {
   microsoftExchangeCode,
   MICROSOFT_SCOPES,
+  MICROSOFT_READ_SCOPE,
 } from "@/lib/email/providers/microsoft";
 import { encrypt } from "@/lib/crypto";
 import { logEvent } from "@/lib/data";
@@ -38,14 +39,19 @@ export async function GET(req: NextRequest) {
     const me = await meRes.json();
     const email = me.mail || me.userPrincipalName || "";
 
+    const grantedScopes = (tokens.scope ?? "").split(/\s+/).filter(Boolean);
     const integration: Integration = {
       provider: "microsoft",
       connectedEmail: email,
       connectedByUid: user.uid,
-      scopes: MICROSOFT_SCOPES,
+      scopes: grantedScopes.length ? grantedScopes : MICROSOFT_SCOPES,
       refreshTokenEnc: encrypt(tokens.refresh_token),
       expiresAt: Date.now() + tokens.expires_in * 1000,
       status: "connected",
+      // Graph returns short scope names; match case-insensitively.
+      canReadMailbox: grantedScopes.some(
+        (s) => s.toLowerCase() === MICROSOFT_READ_SCOPE.toLowerCase()
+      ),
       updatedAt: Date.now(),
     };
     await adminDb

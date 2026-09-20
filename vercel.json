@@ -6,8 +6,16 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/process-sending",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/process-journeys",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron/process-bounces",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

@@ -25,10 +25,14 @@ export interface Org {
   replyToEmail?: string;
   /** IANA timezone for scheduling & display (e.g. "Australia/Sydney"). */
   timezone?: string;
-  /** Subscription plan label, set by a platform admin (no enforcement yet). */
+  /** Subscription plan id (see lib/plans.ts). Set by a platform admin. */
   plan?: string;
   /** Email of the company's admin/owner, denormalized for the admin console. */
   ownerEmail?: string;
+  /** Rolling monthly send counter for plan enforcement. */
+  sentThisMonth?: number;
+  /** The month `sentThisMonth` applies to, as "YYYY-MM" in the org timezone. */
+  sentMonth?: string;
 }
 
 export interface Member {
@@ -65,6 +69,13 @@ export interface Integration {
   status: "connected" | "error" | "revoked";
   lastError?: string;
   updatedAt: number;
+  /**
+   * True when the connection also granted mailbox-read scope, enabling bounce
+   * detection. Older connections (send-only) leave this false.
+   */
+  canReadMailbox?: boolean;
+  /** Cursor for incremental bounce scanning (provider-specific). */
+  bounceScanAt?: number;
 }
 
 export interface Contact {
@@ -125,6 +136,10 @@ export interface Campaign {
   id: string;
   name: string;
   subject: string;
+  /** Optional second subject line for a 50/50 A/B test. */
+  subjectB?: string;
+  /** Hidden preview text shown after the subject in most inboxes. */
+  preheader?: string;
   body: string; // HTML with merge tokens
   fromProvider: IntegrationProvider;
   fromEmail: string;
@@ -150,10 +165,11 @@ export interface Campaign {
   stats: {
     total: number;
     sent: number;
-    failed: number;
-    skipped: number; // unsubscribed / invalid
+    failed: number; // send-time errors (couldn't hand off to the provider)
+    skipped: number; // unsubscribed / suppressed
     opened: number; // unique recipients who opened
     clicked: number; // unique recipients who clicked a link
+    bounced?: number; // async bounces detected after send (NDRs)
   };
   status: CampaignStatus;
   scheduledAt?: number;
@@ -164,7 +180,12 @@ export interface Campaign {
   completedAt?: number;
 }
 
-export type RecipientStatus = "pending" | "sent" | "failed" | "skipped";
+export type RecipientStatus =
+  | "pending"
+  | "sent"
+  | "failed"
+  | "skipped"
+  | "bounced";
 
 export interface Recipient {
   id: string; // contactId
@@ -173,12 +194,32 @@ export interface Recipient {
   error?: string;
   providerMessageId?: string;
   sentAt?: number;
+  /** A/B variant this recipient received (subject A or B). */
+  variant?: "A" | "B";
   // Engagement tracking
   openedAt?: number;
   opens?: number;
   clickedAt?: number;
   clicks?: number;
   lastClickedUrl?: string;
+  // Async bounce (detected by the mailbox NDR scanner).
+  bouncedAt?: number;
+  bounceReason?: string;
+}
+
+/**
+ * A suppressed email address (org-scoped): never send to it again. Sources:
+ * hard bounce, spam complaint, or a manual add. Distinct from a contact
+ * unsubscribing (which flips `subscribed` on the contact) — a suppression can
+ * exist for an address that was never a saved contact.
+ */
+export interface Suppression {
+  /** Doc id = base64url(lowercased email). */
+  id: string;
+  email: string;
+  reason: "bounce" | "complaint" | "manual" | "unsubscribe";
+  detail?: string;
+  createdAt: number;
 }
 
 /** A lightweight segment filter applied to a list at send time. */
@@ -272,9 +313,13 @@ export interface AuditEvent {
   type:
     | "campaign.sent"
     | "campaign.send_failed"
+    | "campaign.bounces_detected"
     | "contact.unsubscribed"
+    | "contact.imported"
+    | "contact.suppressed"
     | "integration.connected"
     | "integration.revoked"
+    | "integration.error"
     | "member.invited"
     | "mfa.enrolled";
   actorUid?: string;

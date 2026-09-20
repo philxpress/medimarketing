@@ -135,19 +135,52 @@ This tool targets **B2B** medical marketing (clinics, practices, referrers).
 
 ---
 
+## Sending, deliverability & limits
+
+- **Queued batch sending** — a send seeds one recipient doc per contact
+  (`status: "pending"`) and processes them in batches (`lib/email/sendCampaign.ts`).
+  The initiating request drains as many batches as fit in its time budget; the
+  `process-sending` cron resumes anything left (over time budget or a daily
+  quota). List size is effectively unbounded and a timeout never leaves a
+  campaign half-sent.
+- **Monthly plan limits** — sends go through the user's own mailbox, so we don't
+  cap per-mailbox volume (the provider's own limits apply there). The only ceiling
+  is the org's monthly subscription allowance, reserved atomically per batch
+  (`lib/email/limits.ts`); when it's reached the queue pauses until next month.
+  Usage shows under **Settings → Plan & usage**.
+- **Bounce detection + suppression** — when a mailbox grants read scope, the
+  `process-bounces` cron scans NDRs, suppresses hard-bounced addresses
+  (`orgs/{id}/suppressions`), and marks the matching recipients `bounced`.
+  Suppressed addresses are skipped on every future send and on import.
+- **Reconnect handling** — an auth failure flips the mailbox to `error`, pauses
+  its sends, and shows a reconnect banner.
+- **Import hygiene** — CSV import verifies syntax + disposable domains + MX and
+  skips suppressed addresses, with a per-reason breakdown.
+
+### Operational notes
+
+- **Vercel crons:** `process-sending` is set to every 5 min and `process-bounces`
+  every 6h in `vercel.json`. The Hobby plan runs crons **daily** and caps the
+  count — on Hobby, large sends still drain within the initiating request's
+  budget, but per-minute resume needs Pro.
+- **Gmail read scope** (`gmail.readonly`, for bounce detection) is a **restricted
+  scope**: production use requires Google's OAuth verification / security
+  assessment. Users can decline it (granular consent) and still send; bounce
+  detection is then off for that mailbox (`canReadMailbox: false`).
+- **Firestore:** collection-group queries on `campaigns.status` and the
+  `recipients`/`suppressions` reads rely on single-field indexes (auto-created).
+
 ## Roadmap
 
-Deliberately out of scope for this MVP foundation; the data model already
-accounts for most of it:
+Still out of scope:
 
-- **Background send queue** — the current sender runs synchronously in a route
-  handler (fine for modest lists). Large sends should move to a queue/cron
-  (e.g. Cloud Tasks or a Vercel cron + batch cursor).
-- **Scheduled campaigns** (`status: "scheduled"` exists; needs a cron trigger).
-- **Reusable templates UI** (`templates` collection is modeled).
-- **Open/click tracking** (pixel + link wrapping).
-- **Team members & invites** (roles are modeled; invite flow TODO).
-- **Bounce/complaint handling** from provider webhooks.
+- **GP referral prospecting** — the shared `clinics` database is modeled but not
+  yet wired to the campaign wizard (postcode-radius query, blind sending,
+  cross-org suppression, Spam Act consent basis).
+- **Reusable templates UI** (`templates` collection is modeled; save-as-template
+  works, no management screen yet).
+- **Billing/checkout** — plan limits are enforced; collecting payment (e.g.
+  Stripe) and self-serve upgrades are not built.
 - **Patient/HIPAA mode** — PHI-free enforcement, consent records, BAA-covered
   infrastructure.
 

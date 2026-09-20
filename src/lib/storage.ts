@@ -38,6 +38,30 @@ export async function uploadAttachment(
   return { url: blob.url, filename, contentType, size: data.length };
 }
 
+/**
+ * Store an inline email image and return its public URL. Inlined base64
+ * (`data:`) images are stripped by Gmail/Outlook, so campaign images MUST be
+ * hosted and referenced by https URL.
+ */
+export async function uploadImage(
+  orgId: string,
+  data: Buffer,
+  contentType: string,
+  ext = "png"
+): Promise<StoredFile> {
+  if (!storageConfigured()) {
+    throw new Error(
+      "Image hosting is not configured. Create a Vercel Blob store and connect it to this project."
+    );
+  }
+  const blob = await put(`orgs/${orgId}/images/ai-${Date.now()}.${ext}`, data, {
+    access: "public",
+    addRandomSuffix: true,
+    contentType,
+  });
+  return { url: blob.url, filename: `image.${ext}`, contentType, size: data.length };
+}
+
 /** Fetch an attachment's bytes (at send time) and return as base64. */
 export async function fetchAsBase64(url: string): Promise<string> {
   const res = await fetch(url);
